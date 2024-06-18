@@ -1,1 +1,76 @@
-hi
+## Project Introduction
+This open source project is based on the open source LLAMA and GLM models, and has implemented a distributed federated learning framework for model fine-tuning and inference on a single/multiple machine deployment.
+While ensuring client data privacy and security, it aggregates model parameters to achieve model parameter sharing. This allows users with limited computing power to use the resources of the project deployment platform for model fine-tuning, thereby achieving vertical domain customization of the model.
+
+## Supported Models
+| Model            | Type | Download                                                                                                                                |
+|------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------|                                                                                                                                                                                         
+| Llama-2-7b-hf    | Chat | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-hf)  |
+| Llama-2-7b-chat-hf | Chat | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)                                                                                                                                                                                          |
+
+## Quick Start
+
+### Install Dependencies
+```bash
+git clone https://github.com/TAP-LLM/SplitFedLLM.git
+cd SplitFedLLM
+pip install -e .
+```
+### Data Preparation
+
+Please arrange the training dataset according to the example file format (a single-column csv file, the input is a sentence as a whole, and the use of special tokens also complies with the file example: /data/train_test.csv)
+
+### Set Script Parameters
+
+Please try to keep the parameter settings of the client and server consistent (communication can be carried out later), the following parameters must be consistent: 
+```bash
+    --learning_rate  
+    --num_train_epochs
+    --warmup_steps 
+    --load_in_bits
+    --lora_r 
+    --lora_alpha
+    --target_modules
+    --seed
+    --block_size
+    --deepspeed ds_config_zero2.json # reuse of deepspeed configuration file
+    --bf16  
+```
+
+
+The client's --master_port='29501' should not be changed back to 29500 if tested on a single machine 
+
+
+### Communication
+
+
+#### Start Service
+##### Fine-tuning:
+Client: ./finetune/sft-client
+Server: ./finetune/sft-service
+Both the client and server are started by launching scripts
+Taking the client as an example:
+``` bash
+    cd ./finetune/sft-client
+    chmod +x ./finetune/sft-client/finetune.sh
+    sh ./finetune/sft-client/finetune.sh/finetune.sh
+```
+Please note to start the server side first, it is best to wait for the server to feedback "waiting for reception" before starting the client
+
+
+##### Inference:
+Client: ./eval/test-client
+Server: ./eval/test-service
+Rewrite the model parameter path for the server and client:  
+```python
+finetune_model_path = "your_finetune_model_path"  # lora parameters
+base_model = "your_base_model_path"  # original model parameters
+```
+```bash
+python test_lora_model.py  # Also run the server side first, after the prompt: "The server side is ready", start the client
+```
+#### End Service
+After the end, manually close the terminal.
+
+## TODO
+Join breakpoint continuation, currently not supported
