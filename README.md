@@ -1,5 +1,5 @@
 # SplitFedLLM
-![License](https://img.shields.io/badge/license-Apache-2.0-yellow)
+![License](https://img.shields.io/badge/license-MIT-yellow)
 Read this in [English](README_en.md)
 
 ## 项目介绍
