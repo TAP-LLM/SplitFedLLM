@@ -20,8 +20,7 @@ https://huggingface.co/models?filter=text-generation
 """
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
 import socket
-import io
-from flask import Flask, request
+import requests
 import pickle
 import logging
 import math
@@ -31,8 +30,6 @@ import random
 from dataclasses import dataclass, field
 from itertools import chain
 from typing import Optional,List,Union
-import csv
-import signal
 
 import deepspeed
 import datasets
@@ -75,29 +72,11 @@ from transformers.utils.versions import require_version
 from modeling_llama import LlamaForCausalLM
 
 import pdb
-from datasets import Dataset, DatasetDict
-from threading import Thread
-from queue import Queue
 
-receiver_ip = '10.143.12.71'
-receiver_port = 5000
-
-data_queue = Queue()
-
-def start_server():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((receiver_ip, receiver_port))
-    s.listen(1)
-
-    while True:
-        conn, addr = s.accept()
-        data = conn.recv(409600)
-        received_array = pickle.loads(data)
-        data_queue.put(received_array)
-        conn.close()
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-# check_min_version("4.27.0.dev0")    
+# check_min_version("4.27.0.dev0")
+
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
 logger = logging.getLogger(__name__)
@@ -292,11 +271,10 @@ class SavePeftModelCallback(TrainerCallback):
             return control
 
 def main():
-    global received_array
-    t = Thread(target=start_server)
-    t.start()
-    print("服务器进程启动，可以启动客户端")
-    # time.sleep(3)
+    # See all possible arguments in src/transformers/training_args.py
+    # or by passing the --help flag to this script.
+    # We now keep distinct sets of args, for a cleaner separation of concerns.
+
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     # pdb.set_trace()
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
@@ -367,7 +345,6 @@ def main():
         dataset_args = {}
         if data_args.train_files is not None:
             data_files["train"] = data_args.train_files
-            
         if data_args.validation_files is not None:
             data_files["validation"] = data_args.validation_files
         extension = (
@@ -449,13 +426,14 @@ def main():
         )
     tokenizer.pad_token = tokenizer.eos_token
     print(model_args.target_modules)
-    t_m_s = []
+    client_layer_id = [0,31]
+    t_m_c = []
     for index in model_args.target_modules:
         print(index)
-        for i in range(1,30):
-            t_m_s.append(str(f'model.layers.{i}.self_attn' + '.' + index))
-    print(t_m_s)
-    model_args.target_modules = t_m_s
+        for i in client_layer_id:
+            t_m_c.append(str(f'model.layers.{i}.self_attn' + '.' + index))
+    print(t_m_c)
+    model_args.target_modules = t_m_c
     print(model_args.target_modules)
     lora_config = LoraConfig(
         r=model_args.lora_r,
@@ -538,13 +516,6 @@ def main():
         with CaptureLogger(tok_logger) as cl:
             output = tokenizer([ item for item in examples[text_column_name]],truncation=True,max_length=data_args.block_size,padding=False,return_tensors=None)
             output['labels'] = output['input_ids'].copy()
-        print(output)
-        test_inputs = [[random.randint(1, 100) for _ in range(shape)]]
-        test_mask = [[1 for _ in range(shape)]]
-        output['input_ids'] = test_inputs
-        output['labels'] = test_inputs
-        output['attention_mask'] = test_mask
-        print(output)
         return output
 
     def tokenize(prompt):
@@ -571,34 +542,15 @@ def main():
     
     
     with training_args.main_process_first(desc="dataset map tokenization"):
-        # if not data_args.streaming:
-        #     tokenized_datasets = raw_datasets.map(
-        #         tokenize_function if train_on_inputs==True else generate_and_tokenize_prompt,
-        #         batched=True if train_on_inputs==True else False,
-        #         num_proc=data_args.preprocessing_num_workers,
-        #         remove_columns=column_names,
-        #         load_from_cache_file=not data_args.overwrite_cache,
-        #         desc="Running tokenizer on dataset",
-        #     )
         if not data_args.streaming:
-            #虚构数据集
-            num_rows = None
-            while(num_rows == None):
-                print("等待接收")
-                if not data_queue.empty():
-                    num_rows = data_queue.get()
-                    print(num_rows)
-                else:
-                    continue
-            tokenized_datasets = DatasetDict()
-
-            for split in ['train', 'validation']:
-                data = {'input_ids': [[random.randint(0, 32000) for _ in range(num_rows[i][0])] for i in range(len(num_rows))], 'attention_mask': [[1 for _ in range(num_rows[i][1])] for i in range(len(num_rows))], 'labels': [[random.randint(0, 32000) for _ in range(num_rows[i][2])] for i in range(len(num_rows))]}
-                dataset = Dataset.from_dict(data)
-                tokenized_datasets[split] = dataset
-
-            print(tokenized_datasets)
-            print(tokenized_datasets['train'][0]['input_ids'])
+            tokenized_datasets = raw_datasets.map(
+                tokenize_function if train_on_inputs==True else generate_and_tokenize_prompt,
+                batched=True if train_on_inputs==True else False,
+                num_proc=data_args.preprocessing_num_workers,
+                remove_columns=column_names,
+                load_from_cache_file=not data_args.overwrite_cache,
+                desc="Running tokenizer on dataset",
+            )
         else:
             tokenized_datasets = raw_datasets.map(
                 tokenize_function if train_on_inputs==True else generate_and_tokenize_prompt,
@@ -623,12 +575,24 @@ def main():
             index_shape = [len(train_dataset[index]['input_ids']), len(train_dataset[index]['attention_mask']), len(train_dataset[index]['labels'])]
             shape_size.append(index_shape)
         print(shape_size)
+        print(len(shape_size))
+        #传数据
+        # array_bytes = pickle.dumps(shape_size)
+        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # receiver_ip = ''
+        # receiver_port = 5000
+        # s.connect((receiver_ip, receiver_port))
+        # s.sendall(array_bytes)
+        # print(shape_size)
+        # stop = input()
+        print("顺利传输数据集构建数据到服务器端")
+        
         if data_args.max_train_samples is not None:
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
         for index in random.sample(range(len(train_dataset)), 3):
             logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
-        # train_dataset = train_dataset.shuffle(seed=training_args.seed)
+        train_dataset = train_dataset.shuffle(seed=training_args.seed)
 
     if training_args.do_eval:
         if "validation" not in tokenized_datasets:

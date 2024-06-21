@@ -48,8 +48,8 @@ error_sender_socket.listen(1)
 print("服务器端已准备就绪")
 time.sleep(3)
 
-finetune_model_path = "/home/wanglingxiang/llama2_lora/sy2342131/models/llama2_zh_huatuo_service_test"
-base_model = "/home/wanglingxiang/llama2_lora/sy2342131/models/Llama2-Chinese-7b-Chat"
+finetune_model_path = "your_checkpoint_path"
+base_model = "your_base_model_path"
 model = LlamaForCausalLM.from_pretrained(
     base_model,
     load_in_8bit=True,

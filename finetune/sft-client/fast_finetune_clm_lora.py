@@ -577,13 +577,13 @@ def main():
         print(shape_size)
         print(len(shape_size))
         #传数据
-        array_bytes = pickle.dumps(shape_size)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        receiver_ip = 'your_ip'
-        receiver_port = 5000
-        s.connect((receiver_ip, receiver_port))
-        s.sendall(array_bytes)
-        print(shape_size)
+        # array_bytes = pickle.dumps(shape_size)
+        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # receiver_ip = ''
+        # receiver_port = 5000
+        # s.connect((receiver_ip, receiver_port))
+        # s.sendall(array_bytes)
+        # print(shape_size)
         # stop = input()
         print("顺利传输数据集构建数据到服务器端")
         

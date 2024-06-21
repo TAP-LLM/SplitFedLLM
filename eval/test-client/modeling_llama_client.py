@@ -80,7 +80,7 @@ def receive_30_p():
     return 'received!'
 
 def run_network_service():
-    app.run(host='10.143.12.71', port=5002)
+    app.run(host='your_ip', port=5002)
 
 if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
@@ -1085,6 +1085,8 @@ class LlamaModel(LlamaPreTrainedModel):
                         use_cache=use_cache,
                         cache_position=cache_position,
                     )
+            if i == 31:
+                print("################################# 31 ###################")
             if i == 0 or i == 31:
                 hidden_states = layer_outputs[0]
                 if use_cache:
@@ -1100,14 +1102,9 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5001/receive_0_hidden', data=buffer.read())
+                            response = requests.post('http://your_ip:5001/receive_0_hidden', data=buffer.read())
                             print(response.text)
-                            if response.text == 'received!':
-                                print("Data sent successfully!")
-                                connected = True
-                            else:
-                                print("Data was not received correctly. Retrying...")
-                            # connected = True
+                            connected = True
                         except:
                             print("Connection failed. Retrying in 3 seconds...")
                             time.sleep(3)
@@ -1122,26 +1119,23 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5001/receive_0_p', data=buffer.read())
+                            response = requests.post('http://your_ip:5001/receive_0_p', data=buffer.read())
                             print(response.text)
-                            if response.text == 'received!':
-                                print("Data sent successfully!")
-                                connected = True
-                            else:
-                                print("Data was not received correctly. Retrying...")
-                            # connected = True
+                            connected = True
                         except:
                             print("Connection failed. Retrying in 3 seconds...")
                             time.sleep(3)
-                            stop = input()
+                            # stop = input()
                             continue
             elif i == 30:
                 hidden_states = None
                 while(hidden_states == None):
                     # print("等待接收30隐状态")
+                    # stop = input()
                     if not data_que_30_hidden.empty():
                         hidden_states = data_que_30_hidden.get()
                     else:
+                        # stop = input()
                         continue
                 print(hidden_states)
                 past_key_values = None
@@ -1152,8 +1146,25 @@ class LlamaModel(LlamaPreTrainedModel):
                             past_key_values = data_que_30_p.get()
                         else:
                             continue
+                # print(past_key_values)
+                # path_s = input("输入状态位置：")
+                # past_key_values = torch.load(path_s)
+                # path_o = input("输入结果位置：")
+                # hidden_states = torch.load(path_o)
             else:
                 hidden_states = layer_outputs
+            # hidden_states = layer_outputs[0]
+            
+            # if use_cache:
+            #     next_decoder_cache = layer_outputs[2 if output_attentions else 1]
+
+            # if output_attentions:
+            #     all_self_attns += (layer_outputs[1],)
+            # if i == 30:
+            #     index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/layer_30_output"))
+            #     torch.save(hidden_states,f"/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/layer_30_output/l_c{index}.pt")
+            #     index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/layer_30_p"))
+            #     torch.save(past_key_values,f"/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/layer_30_p/s_c{index}.pt")
         hidden_states = self.norm(hidden_states)
 
         # add hidden states from the last decoder layer
@@ -1310,6 +1321,23 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             return_dict=return_dict,
             cache_position=cache_position,
         )
+        connected = False
+        while not connected:
+            try:
+                tensor = outputs
+                # print(past_key_values)
+                # stop = input()
+                buffer = io.BytesIO()
+                torch.save(tensor, buffer)
+                buffer.seek(0)
+                response = requests.post('http://your_ip:5001/receive_out', data=buffer.read())
+                print(response.text)
+                connected = True
+            except:
+                print("Connection failed. Retrying in 3 seconds...")
+                time.sleep(3)
+                            # stop = input()
+                continue
         hidden_states = outputs[0]
         if self.config.pretraining_tp > 1:
             lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
@@ -1340,13 +1368,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                     buffer = io.BytesIO()
                     torch.save(tensor, buffer)
                     buffer.seek(0)
-                    response = requests.post('http://10.143.12.71:5001/receive_loss', data=buffer.read())
+                    response = requests.post('http://your_ip:5001/receive_loss', data=buffer.read())
                     print(response.text)
-                    if response.text == 'received!':
-                        print("Data sent successfully!")
-                        connected = True
-                    else:
-                        print("Data was not received correctly. Retrying...")
                     connected = True
                 except:
                     print("Connection failed. Retrying in 3 seconds...")
@@ -1354,8 +1377,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                     # stop = input()
                     continue
             connected = False
-            # index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/loss_t"))
-            # torch.save(loss,f"/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/loss_t/l_c{index}.pt")
+            index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/loss_t"))
+            torch.save(loss,f"/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/loss_t/l_c{index}.pt")
             
         if not return_dict:
             output = (logits,) + outputs[1:]

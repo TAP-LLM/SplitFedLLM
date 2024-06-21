@@ -46,8 +46,8 @@ The client's --master_port='29501' should not be changed back to 29500 if tested
 
 #### Start Service
 ##### Fine-tuning:
-Client: ./finetune/sft-client
-Server: ./finetune/sft-service
+Client: `./finetune/sft-client`
+Server: `./finetune/sft-service`
 Both the client and server are started by launching scripts
 Taking the client as an example:
 ``` bash
@@ -55,22 +55,28 @@ Taking the client as an example:
     chmod +x ./finetune/sft-client/finetune.sh
     sh ./finetune/sft-client/finetune.sh/finetune.sh
 ```
-Please note to start the server side first, it is best to wait for the server to feedback "waiting for reception" before starting the client
+ATTENTION:
+1. Before starting the service, please change all the fields of 'your_ip' to the IP addresses of your server and receiver.
+2. Please start the server first, and it is best to wait for the server to respond with "waiting for reception" before starting the client.
+3. If the dataset is visible to both the server and the receiver, you can change the parameter of finetune_clm_lora.py to fast_finetune_clm_lora.py, note that both the server and the receiver need to make the change.
 
 
 ##### Inference:
-Client: ./eval/test-client
-Server: ./eval/test-service
+Client: `./eval/client.py`
+Server: `./eval/service.py` 
 Rewrite the model parameter path for the server and client:  
 ```python
 finetune_model_path = "your_finetune_model_path"  # lora parameters
 base_model = "your_base_model_path"  # original model parameters
 ```
 ```bash
-python test_lora_model.py  # Also run the server side first, after the prompt: "The server side is ready", start the client
+python service.py
+python client.py 
 ```
 #### End Service
-After the end, manually close the terminal.
+ATTENTION:
+1. Before starting the service, please change all the fields of 'your_ip' to the IP addresses of your server and receiver.
+2. Please start the server first, and it is best to wait for the server to respond with "waiting for reception" before starting the client.
 
 ## TODO
 Join breakpoint continuation, currently not supported

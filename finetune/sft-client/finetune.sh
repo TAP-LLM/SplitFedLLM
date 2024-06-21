@@ -1,13 +1,13 @@
-output_model=/home/wanglingxiang/llama2_lora/sy2342131/models/llama2_huatuo_test
+output_model=your_output_model
 # 需要修改到自己的输入目录
 if [ ! -d ${output_model} ];then  
     mkdir ${output_model}
 fi
 cp finetune.sh ${output_model}
 CUDA_VISIBLE_DEVICES=0 deepspeed --num_gpus=1 --master_port='29501' finetune_clm_lora.py \
-    --model_name_or_path /home/wanglingxiang/llama2_lora/sy2342131/models/Llama2-Chinese-7b-Chat \
-    --train_files /home/wanglingxiang/llama2_lora/sy2342131/datasets/random_data_3000.csv\
-    --validation_files  /home/wanglingxiang/llama2_lora/sy2342131/datasets/validation_data_300.csv\
+    --model_name_or_path your_model \
+    --train_files your_train.csv\
+    --validation_files  your_val.csv\
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --do_train \
@@ -17,7 +17,7 @@ CUDA_VISIBLE_DEVICES=0 deepspeed --num_gpus=1 --master_port='29501' finetune_clm
     --evaluation_strategy  steps \
     --max_eval_samples 800 \
     --learning_rate 1e-4 \
-    --gradient_accumulation_steps 16 \
+    --gradient_accumulation_steps 1 \
     --num_train_epochs 10 \
     --warmup_steps 400 \
     --load_in_bits 4 \

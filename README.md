@@ -1,7 +1,7 @@
 # SplitFedLLM
-![transformers](https://img.shields.io/badge/transformers->=4.38.0-blue)
+![transformers](https://img.shields.io/badge/transformers->=4.38.0-greene)
 ![License](https://img.shields.io/badge/license-MIT-yellow)  
-
+![Python](https://img.shields.io/badge/Python->=3.10.4-blue)  
  Read this in [English](README_en.md)
 
 ## 项目介绍
@@ -53,8 +53,8 @@ pip install -e .
 
 #### 启动服务
 ##### 微调：
-客户端：./finetune/sft-client  
-服务器：./finetune/sft-service
+客户端：`./finetune/sft-client`  
+服务器：`./finetune/sft-service`
 客户端，服务器端都是以启动脚本的方式启动  
 以客户端为例：
 ``` bash
@@ -62,20 +62,30 @@ pip install -e .
     chmod +x ./finetune/sft-client/finetune.sh
     sh ./finetune/sft-client/finetune.sh/finetune.sh
 ```
-注意请先启动服务器端，最好等待服务器反馈"等待接收"后再启动客户端
+注意:
+1. 在启动服务前，请先将所有的`'your_ip'`字段修改为您服务端与接收端的ip地址。
+2. 请先启动服务器端，最好等待服务器反馈"等待接收"后再启动客户端。
+3. 如果使用数据集为服务器接收端都可见，可以修改`finetune_clm_lora.py`参数为`fast_finetune_clm_lora.py`，注意服务器与接收端双方都需要修改。
+
+
+
 
 
 ##### 推理：
-客户端：./eval/test-client  
-服务器：./eval/test-service  
+客户端：`./eval/client.py`  
+服务器：`./eval/service.py`  
 将服务器端和客户端的模型参数路径改写好：  
 ```python
 finetune_model_path = "your_finetune_model_path"  # lora参数
 base_model = "your_base_model_path"  # 原模型参数
 ```
 ```bash
-python test_lora_model.py  # 也是先运行服务器端，在提示：“服务器端已准备就绪”后启动客户端
+python service.py
+python client.py  
 ```
+注意:
+1. 在启动服务前，请先将所有的`'your_ip'`字段修改为您服务端与接收端的ip地址。
+2. 请先启动服务器端，最好等待服务器反馈"等待接收"后再启动客户端。
 #### 结束服务
 结束后，手动关闭终端。
 

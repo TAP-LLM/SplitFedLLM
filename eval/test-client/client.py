@@ -14,8 +14,8 @@ from datasets import Dataset
 import json
 import time
 
-finetune_model_path = "/home/wanglingxiang/llama2_lora/sy2342131/models/llama2_huatuo"
-base_model = "/home/wanglingxiang/llama2_lora/model/Llama-2-7b-hf" #拆分后的模型文件，可以调用“/home/wanglingxiang/llama2/models/Llama-2-7b-hf”测试时效果一致。
+finetune_model_path = "your_checkpoint_path"
+base_model = "your_base_model_path" #拆分后的模型文件，可以调用“/home/wanglingxiang/llama2/models/Llama-2-7b-hf”测试时效果一致。
 model = LlamaForCausalLM.from_pretrained(
     base_model,
     load_in_8bit=True,
@@ -40,7 +40,7 @@ tokenizer = AutoTokenizer.from_pretrained(base_model)
 # array_bytes = pickle.dumps(shape_size)
 
 # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# receiver_ip = '10.143.12.71'
+# receiver_ip = ''
 # receiver_port = 7170
 # s.connect((receiver_ip, receiver_port))
 # s.sendall(array_bytes)
@@ -54,7 +54,7 @@ tokenizer = AutoTokenizer.from_pretrained(base_model)
 # print(result)
 
 
-json_file_path = '/home/wanglingxiang/llama2_lora/sy2342131/datasets/split_file1.json'
+json_file_path = 'your_file_path'
 
 class MyDataset(torch.utils.data.Dataset):
     def __init__(self,json_file_path):
@@ -100,7 +100,7 @@ for i in tqdm(range(len(dataset)), desc="Processing data"):
 
         shape_size = len(input_contents.input_ids[0])
         array_bytes = pickle.dumps(shape_size)
-        receiver_ip = '10.143.12.71'
+        receiver_ip = 'your_ip'
         error_receiver_port = 7171
         error_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         error_socket.settimeout(5)  # 设置超时时间为5秒

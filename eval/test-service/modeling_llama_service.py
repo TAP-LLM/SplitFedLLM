@@ -18,7 +18,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ PyTorch LLaMA model."""
+import requests
 import time
+import socket
+import io
+from flask import Flask, request
 import os
 import math
 import warnings
@@ -49,38 +53,53 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 from transformers import LlamaConfig
-
-import requests
-import torch
 from flask import Flask, request
 import torch
 import io
 from threading import Thread
 from queue import Queue
-
 app = Flask(__name__)
 
-data_que_30_hidden = Queue()
-data_que_30_p = Queue()
+data_que_0_hidden = Queue()
+data_que_0_p = Queue()
+data_que_loss = Queue()
+data_que_out = Queue()
 
-@app.route('/receive_30_hidden', methods=['POST'])
-def receive_30_hidden():
+@app.route('/receive_0_hidden', methods=['POST'])
+def receive_0_hidden():
     tensor_b = io.BytesIO(request.data)
     tensor = torch.load(tensor_b)
     # print(tensor)
-    data_que_30_hidden.put(tensor)
+    data_que_0_hidden.put(tensor)
     return 'received!'
 
-@app.route('/receive_30_p', methods=['POST'])
-def receive_30_p():
+@app.route('/receive_0_p', methods=['POST'])
+def receive_0_p():
     tensor_b = io.BytesIO(request.data)
     tensor = torch.load(tensor_b)
     # print(tensor)
-    data_que_30_p.put(tensor)
+    data_que_0_p.put(tensor)
+    return 'received!'
+
+@app.route('/receive_loss', methods=['POST'])
+def receive_loss():
+    tensor_b = io.BytesIO(request.data)
+    tensor = torch.load(tensor_b)
+    # print(tensor)
+    data_que_loss.put(tensor)
+    return 'received!'
+
+@app.route('/receive_out', methods=['POST'])
+def receive_out():
+    tensor_b = io.BytesIO(request.data)
+    tensor = torch.load(tensor_b)
+    # print(tensor)
+    data_que_out.put(tensor)
     return 'received!'
 
 def run_network_service():
-    app.run(host='10.143.12.71', port=5002)
+    app.run(host='your_ip', port=5001)
+
 
 if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
@@ -977,12 +996,12 @@ class LlamaModel(LlamaPreTrainedModel):
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
-        # self.layers = nn.ModuleList(
-        #     [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
-        # )
         self.layers = nn.ModuleList(
-            [LlamaDecoderLayer(config, 0)] + [FakeLlamaDecoderLayer(config, layer_idx) for layer_idx in range(1,config.num_hidden_layers-1)] + [LlamaDecoderLayer(config, 31)]
+            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
+        # self.layers = nn.ModuleList(
+        #     [FakeLlamaDecoderLayer(config, 0)] + [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(1,config.num_hidden_layers)]
+        # )
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.gradient_checkpointing = False
 
@@ -1061,7 +1080,7 @@ class LlamaModel(LlamaPreTrainedModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = None
 
-        for i, decoder_layer in enumerate(self.layers):
+        for i , decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
             if self.gradient_checkpointing and self.training:
@@ -1074,7 +1093,7 @@ class LlamaModel(LlamaPreTrainedModel):
                         output_attentions,
                         use_cache,
                         cache_position,
-                )
+                    )
             else:
                 layer_outputs = decoder_layer(
                         hidden_states,
@@ -1084,15 +1103,52 @@ class LlamaModel(LlamaPreTrainedModel):
                         output_attentions=output_attentions,
                         use_cache=use_cache,
                         cache_position=cache_position,
-                    )
-            if i == 0 or i == 31:
+                )
+            if i == 0:
+                hidden_states = None
+                while(hidden_states == None):
+                    # print("等待接收0隐状态")
+                    if not data_que_0_hidden.empty():
+                        hidden_states = data_que_0_hidden.get()
+                    else:
+                        continue
+                # if not data_que.empty():
+                #         hidden_states = data_que.get()
+                print(hidden_states)
+                # stop = input()
+                past_key_values = None
+                if flag == 0:
+                    while(past_key_values == None):
+                        # print("等待接收0输出")
+                        if not data_que_0_p.empty():
+                            past_key_values = data_que_0_p.get()
+                            print(past_key_values)
+                            # stop = input()
+                        else:
+                            continue
+                print(past_key_values)
+                # path_s = input("输入状态位置：")
+                # past_key_values = torch.load(path_s)
+                # path_o = input("输入结果位置：")
+                # hidden_states = torch.load(path_o)
+            else:
                 hidden_states = layer_outputs[0]
+
                 if use_cache:
                     next_decoder_cache = layer_outputs[2 if output_attentions else 1]
 
                 if output_attentions:
                     all_self_attns += (layer_outputs[1],)
-                if i == 0:
+                
+                if i == 30:                            
+                    # tensor = hidden_states
+                    # buffer = io.BytesIO()
+                    # torch.save(tensor, buffer)
+                    # buffer.seek(0)
+                    # # s = requests.session()
+                    # # s.keep_alive = False
+                    # response = requests.post('http://your_ip:5002/receive_30_hidden', data=buffer.read())
+                    # print(response.text)
                     connected = False
                     while not connected:
                         try:
@@ -1100,64 +1156,36 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5001/receive_0_hidden', data=buffer.read())
+                            # s = requests.session()
+                            # s.keep_alive = False
+                            response = requests.post('http://your_ip:5002/receive_30_hidden', data=buffer.read())
                             print(response.text)
-                            if response.text == 'received!':
-                                print("Data sent successfully!")
-                                connected = True
-                            else:
-                                print("Data was not received correctly. Retrying...")
-                            # connected = True
+                            connected = True
                         except:
                             print("Connection failed. Retrying in 3 seconds...")
-                            time.sleep(3)
                             # stop = input()
+                            time.sleep(3)
                             continue
                     connected = False
                     while not connected:
                         try:
                             tensor = past_key_values
-                            print(past_key_values)
-                            # stop = input()
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5001/receive_0_p', data=buffer.read())
+                            response = requests.post('http://your_ip:5002/receive_30_p', data=buffer.read())
                             print(response.text)
-                            if response.text == 'received!':
-                                print("Data sent successfully!")
-                                connected = True
-                            else:
-                                print("Data was not received correctly. Retrying...")
-                            # connected = True
+                            connected = True
                         except:
                             print("Connection failed. Retrying in 3 seconds...")
                             time.sleep(3)
-                            stop = input()
                             continue
-            elif i == 30:
-                hidden_states = None
-                while(hidden_states == None):
-                    # print("等待接收30隐状态")
-                    if not data_que_30_hidden.empty():
-                        hidden_states = data_que_30_hidden.get()
-                    else:
-                        continue
-                print(hidden_states)
-                past_key_values = None
-                if flag == 0:
-                    while(past_key_values == None):
-                        # print("等待接收30过去值")
-                        if not data_que_30_p.empty():
-                            past_key_values = data_que_30_p.get()
-                        else:
-                            continue
-            else:
-                hidden_states = layer_outputs
+
         hidden_states = self.norm(hidden_states)
 
         # add hidden states from the last decoder layer
         if output_hidden_states:
+            print("用户试图获取隐状态，服务器端不提供该服务")
             all_hidden_states += (hidden_states,)
 
         next_cache = None
@@ -1165,8 +1193,10 @@ class LlamaModel(LlamaPreTrainedModel):
             next_cache = (
                 next_decoder_cache.to_legacy_cache() if isinstance(next_decoder_cache, Cache) else next_decoder_cache
             )
+            
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+        
         return BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
             past_key_values=next_cache,
@@ -1289,6 +1319,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
         ```"""
+
+        # run_network_service()
         t = Thread(target=run_network_service)
         t.start()
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -1310,6 +1342,18 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             return_dict=return_dict,
             cache_position=cache_position,
         )
+        outputs = None
+        while(outputs == None):
+                # print("等待接收损失")
+            if not data_que_out.empty():
+                outputs = data_que_out.get()
+            else:
+                continue
+        # index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-sever/chat_data/outputs"))
+        # torch.save(outputs,f"/home/wanglingxiang/llama2_lora/lora/sft-sever/chat_data/outputs/l_c{index}.pt")
+        # path = input("请输入")
+        # outputs = torch.load(path)
+        
         hidden_states = outputs[0]
         if self.config.pretraining_tp > 1:
             lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
@@ -1321,6 +1365,19 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         loss = None
         if labels is not None:
+            # print(labels)
+            # print(len(labels[0]))
+            # for i in range(len(labels[0])):
+            #     if labels[0][i] == -100:
+            #         continue
+            #     else:
+            #         break
+            # print(i)
+            # shape = (len(labels[0]) - i,)
+            # test_inputs = torch.randint(1, 32000, size=shape)
+            # print(test_inputs)
+            # labels[0][i:] = test_inputs
+            # print(labels)
             # Shift so that tokens < n predict n
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
@@ -1331,32 +1388,25 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             # Enable model parallelism
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
-            print(loss)
-            # stop = input()
-            connected = False
-            while not connected:
-                try:
-                    tensor = loss
-                    buffer = io.BytesIO()
-                    torch.save(tensor, buffer)
-                    buffer.seek(0)
-                    response = requests.post('http://10.143.12.71:5001/receive_loss', data=buffer.read())
-                    print(response.text)
-                    if response.text == 'received!':
-                        print("Data sent successfully!")
-                        connected = True
-                    else:
-                        print("Data was not received correctly. Retrying...")
-                    connected = True
-                except:
-                    print("Connection failed. Retrying in 3 seconds...")
-                    time.sleep(3)
-                    # stop = input()
+            print(loss) 
+            # path_loss = input("请输入损失位置")
+            # loss_t = torch.load(path_loss)
+            loss_t = None
+            while(loss_t == None):
+                # print("等待接收损失")
+                if not data_que_loss.empty():
+                    loss_t = data_que_loss.get()
+                else:
                     continue
-            connected = False
-            # index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/loss_t"))
-            # torch.save(loss,f"/home/wanglingxiang/llama2_lora/lora/sft-client/chat_data/loss_t/l_c{index}.pt")
+            print(loss_t)
+            loss.data = loss_t.data
+            # print(loss)
+                   
+            # index = len(os.listdir("/home/wanglingxiang/llama2_lora/lora/sft-sever/chat_data/loss"))
+            # torch.save(loss,f"/home/wanglingxiang/llama2_lora/lora/sft-sever/chat_data/loss/l_c{index}.pt")
+            # stop = input("请输入")
             
+
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output
