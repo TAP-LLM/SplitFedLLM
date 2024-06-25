@@ -14,7 +14,7 @@ While ensuring client data privacy and security, it aggregates model parameters 
 ```bash
 git clone https://github.com/TAP-LLM/SplitFedLLM.git
 cd SplitFedLLM
-pip install -e .
+pip install -r requirements.txt
 ```
 ### Data Preparation
 
@@ -52,13 +52,14 @@ Both the client and server are started by launching scripts
 Taking the client as an example:
 ``` bash
     cd ./finetune/sft-client
-    chmod +x ./finetune/sft-client/finetune.sh
-    sh ./finetune/sft-client/finetune.sh/finetune.sh
+    chmod +x ./finetune.sh
+    sh ./finetune.sh
 ```
 ATTENTION:
 1. Before starting the service, please change all the fields of 'your_ip' to the IP addresses of your server and receiver.
 2. Please start the server first, and it is best to wait for the server to respond with "waiting for reception" before starting the client.
 3. If the dataset is visible to both the server and the receiver, you can change the parameter of finetune_clm_lora.py to fast_finetune_clm_lora.py, note that both the server and the receiver need to make the change.
+4. If the dataset is invisible to the server, which means you are using the finetune_clm_lora.py file, then keep the train_files and validation_files parameters in the /SplitFedLLM/finetune/sft-service/finetune.sh file as their default values, and only modify the parameters on the client side.
 
 
 ##### Inference:

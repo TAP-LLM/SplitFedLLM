@@ -21,7 +21,7 @@
 ```bash
 git clone https://github.com/TAP-LLM/SplitFedLLM.git
 cd SplitFedLLM
-pip install -e .
+pip install -r requirements.txt
 ```
 ### 数据准备
 
@@ -59,13 +59,14 @@ pip install -e .
 以客户端为例：
 ``` bash
     cd ./finetune/sft-client
-    chmod +x ./finetune/sft-client/finetune.sh
-    sh ./finetune/sft-client/finetune.sh/finetune.sh
+    chmod +x ./finetune.sh
+    sh ./finetune.sh
 ```
 注意:
 1. 在启动服务前，请先将所有的`'your_ip'`字段修改为您服务端与接收端的ip地址。
 2. 请先启动服务器端，最好等待服务器反馈"等待接收"后再启动客户端。
 3. 如果使用数据集为服务器接收端都可见，可以修改`finetune_clm_lora.py`参数为`fast_finetune_clm_lora.py`，注意服务器与接收端双方都需要修改。
+4. 如果使用数据集为服务器不可见，即使用finetune_clm_lora.py文件的话，将/SplitFedLLM/finetune/sft-service/finetune.sh文件中 的train_files ，validation_files 参数保持默认值不变，仅修改client端的参数
 
 
 

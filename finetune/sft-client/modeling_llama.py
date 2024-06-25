@@ -80,7 +80,7 @@ def receive_30_p():
     return 'received!'
 
 def run_network_service():
-    app.run(host='10.143.12.71', port=5002)
+    app.run(host='your_ip', port=5002)
 
 if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
@@ -1100,7 +1100,7 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5001/receive_0_hidden', data=buffer.read())
+                            response = requests.post('http://your_ip:5001/receive_0_hidden', data=buffer.read())
                             print(response.text)
                             if response.text == 'received!':
                                 print("Data sent successfully!")
@@ -1122,7 +1122,7 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5001/receive_0_p', data=buffer.read())
+                            response = requests.post('http://your_ip:5001/receive_0_p', data=buffer.read())
                             print(response.text)
                             if response.text == 'received!':
                                 print("Data sent successfully!")
@@ -1340,7 +1340,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                     buffer = io.BytesIO()
                     torch.save(tensor, buffer)
                     buffer.seek(0)
-                    response = requests.post('http://10.143.12.71:5001/receive_loss', data=buffer.read())
+                    response = requests.post('http://your_ip:5001/receive_loss', data=buffer.read())
                     print(response.text)
                     if response.text == 'received!':
                         print("Data sent successfully!")

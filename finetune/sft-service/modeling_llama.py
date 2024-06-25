@@ -89,7 +89,7 @@ def receive_loss():
     return 'received!'
 
 def run_network_service():
-    app.run(host='10.143.12.71', port=5001)
+    app.run(host='your_ip', port=5001)
 
 
 if is_flash_attn_2_available():
@@ -1133,7 +1133,7 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer.seek(0)
                             # s = requests.session()
                             # s.keep_alive = False
-                            response = requests.post('http://10.143.12.71:5002/receive_30_hidden', data=buffer.read())
+                            response = requests.post('http://your_ip:5002/receive_30_hidden', data=buffer.read())
                             print(response.text)
                             connected = True
                         except:
@@ -1148,7 +1148,7 @@ class LlamaModel(LlamaPreTrainedModel):
                             buffer = io.BytesIO()
                             torch.save(tensor, buffer)
                             buffer.seek(0)
-                            response = requests.post('http://10.143.12.71:5002/receive_30_p', data=buffer.read())
+                            response = requests.post('http://your_ip:5002/receive_30_p', data=buffer.read())
                             print(response.text)
                             connected = True
                         except:

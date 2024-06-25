@@ -64,7 +64,7 @@ while(True):
     try:
         inputs_len = None
         while(inputs_len == None):
-            # print("等待接收")
+            print("等待接收")
             if not data_queue.empty():
                     inputs_len = data_queue.get()
                     print("接收成功")
