@@ -82,7 +82,8 @@ ATTENTION:
 ## TODO
 Join breakpoint continuation, currently not supported
 
-## If you find this repository useful or our work is related to your research, please kindly cite it:
+## Reference
+If you find this repository useful or our work is related to your research, please kindly cite it:
 ```
 @misc{zheng2024safelylearningprivatedata,
       title={Safely Learning with Private Data: A Federated Learning Framework for Large Language Model}, 

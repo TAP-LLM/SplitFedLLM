@@ -93,7 +93,8 @@ python client.py
 ## TODO
 加入断点续训，目前暂不支持
 
-## 如果你觉得我们的工作有帮助的话，请引用如下论文。
+## 引用 
+如果你觉得我们的工作有帮助的话，请引用如下论文。
 ```
 @misc{zheng2024safelylearningprivatedata,
       title={Safely Learning with Private Data: A Federated Learning Framework for Large Language Model}, 
