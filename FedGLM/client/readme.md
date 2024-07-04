@@ -1,5 +1,5 @@
-client side model partA
+# client side model partA
 
 this fold contains 'config.json','client_model_partA.py' and 'client_partA_config.py'
 
-The pretrained parameter will be uploaded soon.
+The pretrained parameter can be split by using 'splitmodel.py', the details could befound in 'FedGLM/README.md'.
