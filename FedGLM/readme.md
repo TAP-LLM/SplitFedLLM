@@ -2,16 +2,35 @@
 This project is based on the open source federated learning framework flower(https://github.com/adap/flower) and the open source large language model ChatGLM-6B.
 
 ## Setup the enviorment
-Download chatglm-6b first.
+Download chatglm-6b first, then prepare a new virtual environment:
 ```python
+conda create -n yourenvname python=3.9
+conda activate yourenvname
 pip install -r requirements.txt
 ```
 
-## Quick 
+## Quick Start
+### split the model  by using 'split_model.py'
+```python
+python ./FedGLM/split_model.py --glm_path='***' --save_path='***'
+```
+move 'client_model_partA_param.bin' to the fold 'client'
 
+move 'client_model_partC_param.bin' to the fold 'client_part3'
+
+move 'server_param.bin' to the fold 'server'
+
+### configure the 'modeling_chatglm.py'
+you can see the file 'modeling_chatglm.py' in 'chatglm-6b', delete '.' in line 33:
+
+```python
+# from .configuration_chatglm import ChatGLMConfig
+from configuration_chatglm import ChatGLMConfig
+```
+### start split-fed learning
 You can simply start the split-fed server in a terminal as follows:
 ```python
-python ./flserver.py
+python ./FedGLM/flserver.py
 ```
 you'll see:
 ```
@@ -23,7 +42,7 @@ INFO flwr 2024-03-27 20:54:35,712 | flserver.py:89 | Initializing fed-split lear
 
 wait a few secends,than you can start a client in the terminal:
 ```python
-python ./flclient.py
+python ./FedGLM/flclient.py
 ```
 if the terminal print:
 ```
