@@ -1,8 +1,8 @@
-import argparse
 import os
 from transformers import AutoModel
 import torch
 import torch.nn as nn
+import argparse
 
 def split_args():
     parser = argparse.ArgumentParser()
