@@ -21,7 +21,7 @@ move 'client_model_partC_param.bin' to the fold 'client_part3'
 move 'server_param.bin' to the fold 'server'
 
 ### configure the 'modeling_chatglm.py'
-you can see the file 'modeling_chatglm.py' in 'chatglm-6b', delete '.' in line 33:
+you can see the file 'modeling_chatglm.py' in 'chatglm-6b', delete '.' in about line 33 when using FedGLM:
 
 ```python
 # from .configuration_chatglm import ChatGLMConfig
