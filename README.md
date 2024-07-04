@@ -13,7 +13,7 @@ While ensuring client data privacy and security, it aggregates model parameters 
 
 
 ## Notices
-Note that the FedGLM folder contains the training scheme based on the flower framework and ChatGLM-6B, and FedGLM-LLaMA contains the training scheme based on the flask communication framework and LLaMA-7B, and the details of the operation can be referred to the readme file in each folder. We recommend the use of FedGLM in preference to FedGLM-LLaMA because the stability of flask communication framework is weaker than that of flower framework, and FedGLM-LLaMA is more suitable for learning English corpus because FedGLM supports both Chinese and English corpus learning.
+Note that the FedGLM folder contains the training scheme based on the flower framework and ChatGLM-6B, and FedGLM-LLaMA contains the training scheme based on the flask communication framework and LLaMA-7B, and the details of the operation can be referred to the readme file in each folder. We recommend the use of FedGLM in preference to FedGLM-LLaMA because the stability of flask communication framework is weaker than that of flower framework, and FedGLM-LLaMA is more suitable for learning English corpus but FedGLM supports both Chinese and English corpus learning.
 
 ## Reference
 If you find this repository useful or our work is related to your research, please kindly cite it:
