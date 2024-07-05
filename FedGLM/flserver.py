@@ -102,7 +102,6 @@ class FL_Server(Server):
             hidden_state,            
             past_key_values):
         
-        # 确保输入是半精度浮点数
         if hidden_state.dtype != torch.float16:
             hidden_state = hidden_state.half()
         
@@ -133,7 +132,7 @@ class FL_Server(Server):
             parameters=None,
             client_manager=self._client_manager,
         ) # [(client, fit_ins)]
-        # print(client_instructions)
+
 
         if not client_instructions:
             log(INFO, "Caution! No clients selected, cancel and check again!")
@@ -155,7 +154,6 @@ class FL_Server(Server):
             self.evaluate(client_instructions, num_rounds, timeout, start_time, history)
         elif self.model_args.do_predict:
             self.predict(client_instructions, num_rounds, timeout, start_time, history)
-        #上两行是新增的
 
         # all finished
         end_time = timeit.default_timer()
@@ -181,28 +179,23 @@ class FL_Server(Server):
         schedule = LinearLR(server_optim, start_factor=1.0, end_factor=0.0, total_iters=self.model_args.max_step)# num_rounds == num of traing steps of each client
         # with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
         client_id = 1
-        for client_proxy, ins in client_instructions:
-            # print('fitins before train',ins)            
+        for client_proxy, ins in client_instructions:       
             for current_round in range(num_rounds):
-                # print(type(current_round)) # int
-                # train client part A
                 step_time = timeit.default_timer()
                 
                 ins.config['type'] = 1
                 fitres_partA = fit_client_model1(client_proxy, current_round, ins, timeout) # fitres               
-                # print(type(feature1.parameters.tensors))  # list of ndarrays
-                # print(fitres_partA.metrics) # dict of scalar
+
                 featureA = parameters_to_ndarrays(fitres_partA.parameters)
-                # print(feature1) # list of array
+
                 hidden_stateA = torch.from_numpy(featureA[0]).cuda()                                          
                 hidden_stateA = hidden_stateA.clone().detach().requires_grad_(True)
                 att_mask = torch.from_numpy(featureA[1]).cuda()
                 p_ids = torch.from_numpy(featureA[2]).cuda()
-                pkv1 = torch.from_numpy(featureA[3]).cuda() # 27 layers in one tensor
-                # print(pkv1.dtype) # float16
-                # reshape
+                pkv1 = torch.from_numpy(featureA[3]).cuda() 
+
                 pkv1 = pkv1.view(self.model_args.batch_size,self.model_args.pre_seq_len,2*27,32,128).permute([2, 1, 0, 3, 4]).split(2)
-                new = [v.clone().detach().requires_grad_(True) for v in pkv1]# list of tensor:(num_layers*[2, pre_seq_len, batch_size, num_head, head_hidden_size])
+                new = [v.clone().detach().requires_grad_(True) for v in pkv1]
                 pkv1 = tuple(new)
                             
                 # train server model
@@ -217,8 +210,6 @@ class FL_Server(Server):
                 p_ids = featureB.position_ids.clone().detach()
 
                 pkv2 = featureB.past_key_values[0].clone().detach()# .requires_grad_(True)
-                # print(pkv2.size(0))
-                # pkv2 = tuple(pkv2)
                 
                 featureB_od = collections.OrderedDict([('hidden_state', hidden_stateB),
                                                        ('attention_mask', att_mask),
@@ -232,7 +223,6 @@ class FL_Server(Server):
                 # train client partC
                 ins.config['type'] = 2
                 fitres_partC = fit_client_model2(client_proxy, ins, timeout) # featureB's gradient
-                #print(fitres_partC)
                 gradient_server = parameters_to_ndarrays(fitres_partC.parameters)
                 gradient_server_hidden = torch.from_numpy(gradient_server[0]).cuda()
                 gradient_last_pkv = torch.from_numpy(gradient_server[1]).cuda()
@@ -243,22 +233,14 @@ class FL_Server(Server):
                 server_optim.zero_grad()
 
                 featureB.last_hidden_state.backward(gradient_server_hidden)
-                # print(gradient_last_pkv.dtype) # torch.float16
-                # gradient_last_pkv = gradient_last_pkv.to(pkv1[-1].dtype)
-                # print(gradient_last_pkv.dtype)
-                # print(pkv1[0].grad.dtype)
+
                 pkv1[-1].grad = gradient_last_pkv
-                # print(pkv1[0].grad)
                 server_optim.step()
                 schedule.step()
 
                 # reshape pkv1.grad (tuple of tensor[2,5,1,32,128] to tensor)
                 p_list=[pkv1[i].grad for i in range(len(pkv1))]
                 pkv1_grad = torch.cat(p_list).permute([2, 1, 0, 3, 4]).reshape(self.model_args.batch_size,self.model_args.pre_seq_len, 2*27*4096)
-                # print(pkv1_grad.size())
-                # print(hidden_stateA.grad.size())
-                # torch.Size([1, 5, 221184])
-                # torch.Size([30, 1, 4096])
 
                 # backfit client model partA 
                 ins.config['type'] = 3
@@ -267,7 +249,6 @@ class FL_Server(Server):
                                                        ('past_key_value_gradient',pkv1_grad)]) # it's a tuple of tensor need change to tensor!
                 gradient =  [val.cpu().numpy() for _, val in gradient_od.items()]
                 ins.parameters = ndarrays_to_parameters(gradient)
-                # print(ins) # FitIns tensor:list[bytes]
 
                 # print('fitins for backward client model A')
 
@@ -280,9 +261,6 @@ class FL_Server(Server):
                 # reset fit_ins
                 ins.parameters = Parameters(tensors=[], tensor_type="")
 
-                # print('fit ins for next step:',ins) 
-                # print(fitres_partC) # FitRes, metrics{}
-                # it seams that fitresA=fitresC
                 history.add_loss_distributed(current_round, fitres_partC.metrics['loss'])
 
             # Bookkeeping
@@ -299,25 +277,21 @@ class FL_Server(Server):
         for client_proxy, ins in client_instructions:
             # print('fitins before train',ins)            
             for current_round in range(num_rounds):
-                # print(type(current_round)) # int
                 # eval client part A
                 step_time = timeit.default_timer()
                 
                 ins.config['type'] = 1
                 fitres_partA = fit_client_model1(client_proxy, current_round, ins, timeout) # fitres               
-                # print(type(feature1.parameters.tensors))  # list of ndarrays
-                # print(fitres_partA.metrics) # dict of scalar
                 featureA = parameters_to_ndarrays(fitres_partA.parameters)
-                # print(feature1) # list of array
                 hidden_stateA = torch.from_numpy(featureA[0]).cuda()                                          
                 hidden_stateA = hidden_stateA.clone().detach().requires_grad_(True)
                 att_mask = torch.from_numpy(featureA[1]).cuda()
                 p_ids = torch.from_numpy(featureA[2]).cuda()
                 pkv1 = torch.from_numpy(featureA[3]).cuda() # 27 layers in one tensor
-                # print(pkv1.dtype) # float16
+
                 # reshape
                 pkv1 = pkv1.view(self.model_args.batch_size,self.model_args.pre_seq_len,2*27,32,128).permute([2, 1, 0, 3, 4]).split(2)
-                new = [v.clone().detach().requires_grad_(True) for v in pkv1]# list of tensor:(num_layers*[2, pre_seq_len, batch_size, num_head, head_hidden_size])
+                new = [v.clone().detach().requires_grad_(True) for v in pkv1]
                 pkv1 = tuple(new)
                             
                 # eval server model
@@ -325,15 +299,14 @@ class FL_Server(Server):
                                              position_ids = p_ids,
                                              attention_mask = att_mask,
                                              hidden_state = hidden_stateA,            
-                                             past_key_values = pkv1) # dict
+                                             past_key_values = pkv1) 
 
                 hidden_stateB = featureB.last_hidden_state.clone().detach()#.requires_grad_(True)
                 att_mask = featureB.attention_mask.clone().detach()
                 p_ids = featureB.position_ids.clone().detach()
 
                 pkv2 = featureB.past_key_values[0].clone().detach()# .requires_grad_(True)
-                # print(pkv2.size(0))
-                # pkv2 = tuple(pkv2)
+
                 
                 featureB_od = collections.OrderedDict([('hidden_state', hidden_stateB),
                                                        ('attention_mask', att_mask),
@@ -348,10 +321,6 @@ class FL_Server(Server):
                 ins.config['type'] = 2
                 fitres_partC = fit_client_model2(client_proxy, ins, timeout) # featureB's gradient
                 gradient_server = parameters_to_ndarrays(fitres_partC.parameters)
-                # gradient_server_hidden = torch.from_numpy(gradient_server[0]).cuda()
-                # gradient_last_pkv = torch.from_numpy(gradient_server[1]).cuda()
-                # print("server side gradient:", gradient_server)
-                # loss = fitres_partC.metrics['loss']
 
                 step_end = timeit.default_timer()
                 step_elapsed = step_end - step_time
@@ -361,9 +330,7 @@ class FL_Server(Server):
                 # reset fit_ins
                 ins.parameters = Parameters(tensors=[], tensor_type="")
 
-                # print('fit ins for next step:',ins) 
-                # print(fitres_partC) # FitRes, metrics{}
-                # it seams that fitresA=fitresC
+
                 history.add_loss_distributed(current_round, fitres_partC.metrics['loss'])
 
             # Bookkeeping
@@ -375,22 +342,18 @@ class FL_Server(Server):
     def predict(self, client_instructions, num_rounds, timeout, start_time, history):
         client_id = 1
         self.model_args.max_output_length = 64
+        if self.model_args.do_inference and self.model_args.do_predict:
+            num_rounds=1
         for client_proxy, ins in client_instructions:
             # print('fitins before train',ins)
             for current_round in range(num_rounds):
                 need_test_data =True
                 for _ in range(self.model_args.max_output_length):
-                    # print(type(current_round)) # int
-                    # predict client part A
-                    step_time = timeit.default_timer()
 
+                    step_time = timeit.default_timer()
                     ins.config['type'] = 1
-                    # 将上一轮的
                     fitres_partA = fit_client_model1(client_proxy, current_round, ins, timeout, need_test_data)
                     featureA = parameters_to_ndarrays(fitres_partA.parameters)
-                    #6/16新增
-                    #print(f"featureA:{featureA}")
-                    # print(feature1) # list of array
                     hidden_stateA = torch.from_numpy(featureA[0]).cuda()
                     hidden_stateA = hidden_stateA.clone().detach().requires_grad_(True)
                     att_mask = torch.from_numpy(featureA[1]).cuda()
@@ -398,7 +361,7 @@ class FL_Server(Server):
                     pkv1 = torch.from_numpy(featureA[3]).cuda() # 27 layers in one tensor
                     # reshape
                     pkv1 = pkv1.view(self.model_args.batch_size,self.model_args.pre_seq_len,2*27,32,128).permute([2, 1, 0, 3, 4]).split(2)
-                    new = [v.clone().detach().requires_grad_(True) for v in pkv1]# list of tensor:(num_layers*[2, pre_seq_len, batch_size, num_head, head_hidden_size])
+                    new = [v.clone().detach().requires_grad_(True) for v in pkv1]
                     pkv1 = tuple(new)
 
                     # predict server model
@@ -407,15 +370,12 @@ class FL_Server(Server):
                                                 attention_mask = att_mask,
                                                 hidden_state = hidden_stateA,
                                                 past_key_values = pkv1) # dict
-                    #6/16新增
-                    #print("featureB:", featureB)
+
                     hidden_stateB = featureB.last_hidden_state.clone().detach()#.requires_grad_(True)
                     att_mask = featureB.attention_mask.clone().detach()
                     p_ids = featureB.position_ids.clone().detach()
 
                     pkv2 = featureB.past_key_values[0].clone().detach()  # .requires_grad_(True)
-                    # print(pkv2.size(0))
-                    # pkv2 = tuple(pkv2)
 
                     featureB_od = collections.OrderedDict([('hidden_state', hidden_stateB),
                                                         ('attention_mask', att_mask),
@@ -428,10 +388,9 @@ class FL_Server(Server):
                     # predict client partC
                     ins.config['type'] = 2
                     need_test_data = False
-                    #print("得到最终输出token:")
                     fitres_partC = fit_client_model2(client_proxy, ins, timeout)  # We should return the prediction result
                     if fitres_partC.metrics['pred_finished']==1:
-                        print(f"第{current_round+1}个问题回答结束！")
+                        print(f"Question {current_round+1} sovled！")
                         break
 
 
@@ -458,7 +417,6 @@ def fit_client_model2(
 ) -> FitRes:
     """Refine parameters on a single client."""
     fit_res = client.fit(ins, timeout)
-    # print("fit_res:", fit_res)
     return fit_res
 
 def back_client_model1(
@@ -467,7 +425,7 @@ def back_client_model1(
     """Refine parameters on a single client."""
     # ins.parameter = feature gradient
     
-    fit_res = client.fit(ins, timeout) # 非抽象方法
+    fit_res = client.fit(ins, timeout) 
     return fit_res
 
 def save_client(client: ClientProxy) -> None:
@@ -531,7 +489,6 @@ def parameters1():
     parser.add_argument("--do_train", type=bool, help='Whether to run training.', default=False)
     parser.add_argument("--do_eval", type=bool, help='Whether to run eval on the dev set.', default=False)
     parser.add_argument("--do_predict", type=bool, help='Whether to run predictions on the test set.', default=False)
-    #6/28新增
     parser.add_argument("--max_output_length", type=int, help='max_output_length.', default=256)
     parser.add_argument("--pred_finished", type=bool, help='pred_finished.', default=False)
     args = parser.parse_args()
@@ -540,15 +497,11 @@ def parameters1():
 
 def main():
     torch.manual_seed(42)
-     # get train parameters
+    # get train parameters
     args = parameters1()
-    # args.do_train = True
-    # args.do_eval = False
-    # args.do_predict = False
-    # 6/26新增
-    args.do_train = False
+    args.do_train = True
     args.do_eval = False
-    args.do_predict = True
+    args.do_predict = False
     args.max_step = 30000    
     args.pre_seq_len = 128
     args.lr = 2e-2
@@ -556,13 +509,11 @@ def main():
 
     # SET SERVER MODEL
     # modelB config and initialize
-    #server_config = AutoConfig.from_pretrained('./fed-glm-module/server/', trust_remote_code=True)
-    server_config = AutoConfig.from_pretrained('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/server', trust_remote_code=True)
+    server_config = AutoConfig.from_pretrained('./server/', trust_remote_code=True)
     server_config.pre_seq_len = args.pre_seq_len # 
     server_config.prefix_projection = False
     server_model = ChatGLMForConditionalGenerationServerSide(config=server_config).cuda()
-    #server_state_dict = torch.load('fed-glm-module/server/server_model_param.bin')
-    server_state_dict = torch.load('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/server/server_model_param.bin')
+    server_state_dict = torch.load('./server/server_model_param.bin')
     server_model.load_state_dict(server_state_dict)
 
     if args.quantization_bit is not None:
