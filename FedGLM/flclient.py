@@ -53,7 +53,7 @@ class Fed_Client(NumPyClient):
     def __init__(self, datalist, optimizer, schedule, models, tokenizer, model_args) -> None:
         super(Fed_Client, self).__init__()
 
-        self.datalist = datalist # list化的dataloader,因为这里不是主循环入口
+        self.datalist = datalist
         self.len_dataset = len(datalist[0])
         self.model = models  # [ModelA, ModelB]
         self.optim = optimizer
@@ -67,9 +67,7 @@ class Fed_Client(NumPyClient):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.data = None
         self.total_pred=[]
-        # if self.model_args.do_predict:
-        #     global data
-        #     global total_pred
+
         if self.model_args.do_train:
             self.model[0].train()
             self.model[1].train()
@@ -131,14 +129,7 @@ class Fed_Client(NumPyClient):
             current_epoch = current_step // self.len_dataset
             current_batch =current_step % self.len_dataset
             data = self.datalist[current_epoch][current_batch]['input_ids'].cuda()
-            # 6/26新增
-            # data.type:torch.Size([1, 640])
             label = self.datalist[current_epoch][current_batch]['labels'].cuda()
-            #label.type: torch.Size([1, 640])
-        # else:
-        #     data = self.datalist[current_step]['input_ids'].cuda()
-        #     label = self.datalist[current_step]['labels'].cuda()
-        # 以下6行 6/26新增
         elif self.model_args.do_eval:
             data = self.datalist[current_step]['input_ids'].cuda()
             label = self.datalist[current_step]['labels'].cuda()
@@ -152,34 +143,18 @@ class Fed_Client(NumPyClient):
                 data = self.data.cuda()
                 label = None
 
-        # previous_output = None
-        # smashed_data = parameters
-        # if smashed_data !=0:
-        #     previous_output = torch.from_numpy(smashed_data[0]).cuda() #  torch.Size([2, 5, 1, 32, 128])
-
-        # if previous_output is None:
-        #     pass
-        # else:
-        #     data = torch.cat([ data, previous_output], dim=1)
-
         # forward pass
         f1 = self.model[0](data)
         hidden1 = f1.last_hidden_state.clone().detach() #.requires_grad_(True)
         att_mask = f1.attention_mask.clone().detach()
         p_ids = f1.position_ids.clone().detach()
-        # pastkey_value(tuple(tensor{[2, 5, 1, 32, 128]})) to tensor
-        # param = torch.cat(p_list).permute([2, 1, 0, 3, 4]).reshape(1,128,2*28*4096)
-        # param = param.squeeze(0)
         p_list = []
         for i in range(len(f1.past_key_values)):
             s = f1.past_key_values[i]
             s = s.clone().detach() #.requires_grad_(True)
             p_list.append(s) # list
         # reshape to one tensor
-        # [27,2,preseqlen, batchsize, 32,128]
-        # [27*2,preseqlen, batchsize, 32,128]
         pkv = torch.cat(p_list).permute([2, 1, 0, 3, 4]).reshape(self.model_args.batch_size,self.model_args.pre_seq_len,2*27*4096)
-        # param = param.squeeze(0) 
         
         # self.get_parameters(ff1) # send feature of modle1 to server
         self.label = label
@@ -191,36 +166,14 @@ class Fed_Client(NumPyClient):
                                       ('position_ids', p_ids),
                                       ('past_key_values', pkv)])
         feature = [val.cpu().numpy() for _, val in od.items()]
-        # 6/28新增
-        # if self.model_args.do_predict:
-        #     od = collections.OrderedDict([('hidden_stateA', hidden1),
-        #                               ('attention_mask', att_mask),
-        #                               ('position_ids', p_ids),
-        #                               ('past_key_values', pkv),
-        #                               ('input_data', data)])
-        #     feature = [val.cpu().numpy() for _, val in od.items()]
-
-        # else:
-        #     od = collections.OrderedDict([('hidden_stateA', hidden1),
-        #                               ('attention_mask', att_mask),
-        #                               ('position_ids', p_ids),
-        #                               ('past_key_values', pkv)])
-        #     feature = [val.cpu().numpy() for _, val in od.items()]
 
 
-        return feature # 数据不包含梯度！
-        #6/28新增
+        return feature # Feature doesn't contain gradients！
 
-    def fit_partC(self, parameters: NDArrays=None, config: Dict[str, Scalar]=None):       
-        # ff2 = self.set_parameters(ff2) # recieve feture of model2 from server
-        # print('there')
-        
+    def fit_partC(self, parameters: NDArrays=None, config: Dict[str, Scalar]=None):        
         smashed_data = parameters
-        past_key_values = torch.from_numpy(smashed_data[3]).cuda() #  torch.Size([2, 5, 1, 32, 128])
-        # print('past_key_values size in fit C:',past_key_values.size())
+        past_key_values = torch.from_numpy(smashed_data[3]).cuda() 
         past_key_values = past_key_values.clone().detach().requires_grad_(True)
-
-        
         hidden = torch.from_numpy(smashed_data[0]).cuda().requires_grad_(True)
         att_mask = torch.from_numpy(smashed_data[1]).cuda()
         p_ids = torch.from_numpy(smashed_data[2]).cuda()
@@ -232,10 +185,6 @@ class Fed_Client(NumPyClient):
                             hidden_state = hidden,
                             past_key_values = pkv2, 
                             labels = self.label) 
-        #6/16 新增
-        # final_output.logits.size:torch.Size([1, 128, 130528])
-        
-
         
         metrics = {}
         gradient = []
@@ -267,35 +216,20 @@ class Fed_Client(NumPyClient):
             self.train_metricx['step'].append(config['current_step'])
             self.train_metricx['loss'].append(loss.item())
 
-        # 6/26新增
         elif self.model_args.do_predict:
             metrics['pred_finished'] = 0
-            #log(INFO, 'DO_PREDICT')
             if len(self.total_pred)==0:
                 print('DO_PREDICT')
-
-            # 6/26新增
-            # final_output: tuple(loss, logits)
-            # final_output[1]是一个元组，长度为1，final_output[1][0]是一个元组，长度为2，每一个都是一个tensor, 形状都是torch.Size([256, 1, 32, 128])
-            #print(f"final_output.logits:{final_output.logits}")
-            # tensor(,batch_size,, vocab_size)
+                
             logits=final_output.logits[:,-1,:] #(B，vocab size)
             probs = F.softmax(logits, dim=-1)
-            # 此时有多种生成方法，这里使用采样生成方法
-            # print("self.data:",self.data)
             pred_ids = self.sample_text(probs)
             self.total_pred.append(int(pred_ids[0][0]))
-            print(f"这是第{len(self.total_pred)}个pred_ids:{pred_ids}")
-            # print(f"pred_ids:{pred_ids}")
-            # 找到padding的第一个位置，把data的第一个padding符号替换掉
+            print(f"This is pred_ids {len(self.total_pred)}:{pred_ids}")
             self.data = self.concatenate_output(self.data, pred_ids)
 
             self.model_args.max_output_length=64
-            # 如果输出结束符号，则告诉服务端停止
             if pred_ids[0][-1] == 130005 or len(self.total_pred) == self.model_args.max_output_length:
-                #结束符130005
-                #self.model_args.pred_finished = True
-                #使用decoder输出所有的预测结果
                 tokenizer = AutoTokenizer.from_pretrained('chatglm-6b', trust_remote_code=True)
                 response = tokenizer.decode(self.total_pred)
                 print(f"response:{response}")
@@ -325,51 +259,37 @@ class Fed_Client(NumPyClient):
 
         return gradient, 0, metrics  # GetParametersRes
 
-    #采样生成代码
     def sample_text(self, probs, temperature=0.95, top_p=0.7):
-        # 应用temperature
         probs = probs.pow(1 / temperature)
-        # if ( probs  != 0).any():
-        #     print("inputs_embeds 不全是0")
-        # else:
-        #     print("inputs_embeds 全是0")
 
-        # 按概率排序
+        # sort by probability
         sorted_probs, sorted_indices = torch.sort(probs, descending=True)
         
-        # 计算累积概率
+        # compute accumulated probs
         cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
         
-        # 移除低于阈值的token
+        # remove token under the threshold
         sorted_indices_to_remove = cumulative_probs > top_p
         sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-        sorted_indices_to_remove[..., 0] = 0  # 保留最高概率的token
+        sorted_indices_to_remove[..., 0] = 0  
         
-        # 屏蔽掉被移除的indices
         indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
         probs[indices_to_remove] = 0
-    
-        # 重新归一化概率分布
         probs = probs / probs.sum(dim=-1, keepdim=True)
 
-        # 采样
+        # sample
         next_token = torch.multinomial(probs, num_samples=1)
         
         return next_token
 
     def concatenate_output(self, input_tensor, output_tensor, pad_token=3):
-        # 获取输入的形状
         batch_size, seq_len = input_tensor.size()
-
-        # 去掉padding部分
         non_padding_input = input_tensor[input_tensor != pad_token].view(batch_size, -1)
-
-        # 拼接输出
+        # concate output with input
         new_input = torch.cat((non_padding_input, output_tensor), dim=1)
 
-        # 重新填充到原始长度
-        pad_length = seq_len - new_input.size(1)  #128
-        #pad_length = 2*seq_len - new_input.size(1) #256：问题和回答总token不超过256
+        # re-padding
+        pad_length = seq_len - new_input.size(1)  
         padded_input = torch.nn.functional.pad(new_input, (pad_length, 0), value=pad_token)
         
         return padded_input
@@ -378,29 +298,19 @@ class Fed_Client(NumPyClient):
         # ff1_grad = self.set_parameters(args.ff1_grad) # recieve gradient of ff1 from server
 
         hidden_gradient = torch.from_numpy(parameters[0]).cuda()
-        # print(hidden_gradient)
         pkv_gradient = torch.from_numpy(parameters[1]).cuda() # tensor([batch_size,pre_seq_len, 2*27*4096])
         # reshape pkv_gradient
         # pkv_gradient = pkv_gradient.unsqueeze(0).expand(self.model_args.batch_size, -1, -1) # batch size==1
         pkv_gradient = pkv_gradient.view(self.model_args.batch_size,self.model_args.pre_seq_len, 2*27,32,128).permute([2, 1, 0, 3, 4]).split(2)
         newpkv_gradient = [torch.stack([v[0],v[1]]) for v in pkv_gradient]
-        # for i in range(len(newpkv_gradient)):
-
-
-        # print(type(lastpkv_gradient))
         self.optim[0].zero_grad()
-        # self.f1.last_hidden_state.backward(hidden_gradient, retain_graph=True)
 
         for i in range(27):
-        # print(i)
-        # print(f1.past_key_values[i].size())
-        # print(grad[i].size())
-        # 此处报错，RuntimeError: Expected a proper Tensor but got None (or an undefined Tensor in C++) for argument #1 'other'
             self.f1.past_key_values[i].backward(newpkv_gradient[i], retain_graph=True) 
 
         self.f1.last_hidden_state.backward(hidden_gradient)
         
-        # 梯度剪裁
+        # Gradient Clipping
         nn.utils.clip_grad_norm_(self.model[0].parameters(), self.model_args.max_grad_norm)
         self.optim[0].step()
         self.schedule[0].step()
@@ -411,10 +321,8 @@ class Fed_Client(NumPyClient):
         
         if config['current_step'] == self.model_args.max_step-1 :
             print('Now saving training metrix!')
-            # 指定保存路径
             json_save_path = os.path.join(self.model_args.output_dir,'loss.json')
 
-            # 保存字典到文件
             with open(json_save_path, 'w') as f:
                 json.dump(self.train_metricx, f)
 
@@ -422,7 +330,7 @@ class Fed_Client(NumPyClient):
 
     def save_model(self, step, optimizer, schedule):
         # torch.save(self.model[0], 'checkpoint/testcheckmlp/client_part1.pt')
-        print("Saving PrefixEncoder")  # 仅保存prefix  # 未执行
+        print("Saving PrefixEncoder")  
         filtered_state_dict = self.model[0].state_dict()['transformer.prefix_encoder.embedding.weight']
         # schedule_state_A = schedule[0].state_dict()
         # schedule_state_C = schedule[1].state_dict()
@@ -445,17 +353,7 @@ class Fed_Client(NumPyClient):
             head_state_dict = self.model[1].state_dict()['lm_head.weight']
             torch.save(head_state_dict, out_dir_h)
 
-        # out_dir_OA = os.path.join(check_fold, 'splitfed-optimA.pt')
-        # out_dir_OC = os.path.join(check_fold, 'splitfed-optimC.pt')
-        # out_dir_SA = os.path.join(check_fold, 'splitfed-schduleA.pt')
-        # out_dir_SC = os.path.join(check_fold, 'splitfed-schduleC.pt')
-
         torch.save(filtered_state_dict, out_dir_p)
-        
-        # torch.save(optimizer[0], out_dir_OA)
-        # torch.save(optimizer[1], out_dir_OC)
-        # torch.save(schedule[0], out_dir_SA)
-        # torch.save(schedule[1], out_dir_SC)
 
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
@@ -546,7 +444,6 @@ def FLparser(): # use glm arguments with argument.py
     
     parser.add_argument("--max_train_samples", type=Optional[int], default=None)
     parser.add_argument("--max_eval_samples", type=Optional[int], default=None)  
-    #6/26新增
     parser.add_argument("--max_predict_samples", type=Optional[int], default=None)
     parser.add_argument("--val_max_target_length", type=Optional[int], default=None)
     
@@ -579,49 +476,6 @@ def compute_metrics(preds, labels, tokenizer, args):
         print('decode_predictions:', decoded_preds)
         print('labels:', labels)
         print('decode_labels:', decoded_labels)
-        
-        # auc = 0
-        # for i in range(len(decoded_labels)):
-        #     if decoded_labels[i] == decoded_preds[i]:
-        #         auc + 1
-        
-        # acc = auc/len(decoded_labels)
-
-        # preds_1 = []
-        # labels_1 = []
-        # # CB
-        # for item in decoded_preds:
-        #     if item=='Yes':
-        #         preds_1.append(0)
-        #     elif item=='No':
-        #         preds_1.append(1)
-        #     elif item=='Maybe':
-        #         preds_1.append(2)
-
-        # # for item in decoded_labels:
-        # #     labels_1.append(1 if item=='Yes' else 0)
-        # for item in decoded_labels:
-        #     if item=='Yes':
-        #         labels_1.append(0)
-        #     elif item=='No':
-        #         labels_1.append(1)
-        #     elif item=='Maybe':
-        #         labels_1.append(2)
-
-        # pred_1 = np.array(preds_1)
-        # label_1 = np.array(labels_1)
-
-        # print(pred_1)
-        # print(label_1)
-
-        # acc = accuracy_score(label_1,pred_1)
-        # cm = confusion_matrix(decoded_labels, decoded_preds, labels=['Yes','No','Maybe']) # CB
-        # f1score = f1_score(label_1, pred_1, average='macro')
-
-        # print('metrics:')
-        # print('Accuracy:', acc)
-        # print('Confusion_matrix:', cm)
-        # print('F1-Score',f1score)
 
         score_dict = {
             "rouge-1": [],
@@ -662,14 +516,13 @@ def main() -> None:
     # modelA_args.do_train = True
     # modelA_args.do_eval = False
     # modelA_args.do_predict = False
-    # 6/26新增
     modelA_args.do_train = False
     modelA_args.do_eval = False
     modelA_args.do_predict = True
 
     modelA_args.lr = 2e-2
     modelA_args.data_fold = './data/QA/huatuo'
-    modelA_args.output_dir = '/home/zhengjiaying/project/TFed-GLM/checkpoint/604huatuo30000-128-512-128-2e-2-freezehead'
+    modelA_args.output_dir = ' your output_dir path'
     modelA_args.max_step = 30000
     modelA_args.premise_column = 'premise'
     modelA_args.question_column = 'question'
@@ -677,30 +530,19 @@ def main() -> None:
     modelA_args.answer_column = 'answer'
     modelA_args.pre_seq_len = 128
     modelA_args.save_step = 1500
-    modelA_args.ptuning_checkpoint = '/home/zhengjiaying/project/TFed-GLM/checkpoint/604huatuo30000-128-512-128-2e-2-freezehead/checkpoint-30000'
+    modelA_args.ptuning_checkpoint = 'your ptuning_checkpoint path'
     modelA_args.freeze_head = True
     modelA_args.val_max_target_length = 1000
-    # 6/26新增
-    modelA_args.max_predict_samples = 1000 # 样本最大数
+    modelA_args.max_predict_samples = 1000 
 
-    # if not modelA_args.do_train:
-    #     if isinstance(modelA_args.ptuning_checkpoint, None):
-    #         print('please check the ptuning_checkpoint! it should\'t be None when you are not in training mode!')
-    # 6/26新增
     if not modelA_args.do_train:
         if modelA_args.ptuning_checkpoint == None:
             print('please check the ptuning_checkpoint! it should\'t be None when you are not in training mode!')
 
-    # device
-    # device = torch.device("cuda:0" if torch.cuda.is_available() and modelA_args.use_cuda else "cpu")
-
-    # initial model
-         # Set seed before initializing model.
     set_seed(modelA_args.seed)
 
     # modelA config and initial
-    #configA = AutoConfig.from_pretrained('./fed-glm-module/client/', trust_remote_code=True)
-    configA = AutoConfig.from_pretrained('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client', trust_remote_code=True)
+    configA = AutoConfig.from_pretrained('./client', trust_remote_code=True)
     configA.pre_seq_len = modelA_args.pre_seq_len
     configA.prefix_projection = False
 
@@ -708,40 +550,32 @@ def main() -> None:
     modelA = ChatGLMForConditionalGenerationClientSide(config=configA).cuda()
     if modelA_args.do_train:
         param = modelA.state_dict()['transformer.prefix_encoder.embedding.weight']
-        # ss = model.state_dict()
-        # print(model.state_dict())
-        # print(modelA) # 通过
 
-        state_dictA = torch.load('fed-glm-module/client/client_model_partA_param.bin')
+        state_dictA = torch.load('./client/client_model_partA_param.bin')
 
-        state_dictA['transformer.prefix_encoder.embedding.weight'] = param  # prefix_encoder需要在初始化模型的时候根据pre_seq_len生成，这个模型又没办法用automodel，莫得办法只能迂回处理
+        state_dictA['transformer.prefix_encoder.embedding.weight'] = param  
 
         modelA.load_state_dict(state_dictA)
 
     else:
-        #state_dictA = torch.load(modelA_args.ptuning_checkpoint, "splitfed-ptuning.bin")
-        # 6/26新增
         param = modelA.state_dict()['transformer.prefix_encoder.embedding.weight']
-        state_dictA = torch.load('fed-glm-module/client/client_model_partA_param.bin')
+        state_dictA = torch.load('./client/client_model_partA_param.bin')
         state_dictA['transformer.prefix_encoder.embedding.weight'] = param
         modelA.load_state_dict(state_dictA)
         ptuning_state_dict = torch.load(os.path.join(modelA_args.ptuning_checkpoint, "splitfed-ptuning.bin"))
         new_prefix_state_dict = {"embedding.weight": ptuning_state_dict} #torch.Size([128, 229376])
-        # new_prefix_state_dict = {}
-        # for k, v in prefix_state_dict.items():
-        #     if k.startswith("transformer.prefix_encoder."):
-        #         new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v 
         modelA.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
 
 
     # modelC config and initialize
-    configC = AutoConfig.from_pretrained('./fed-glm-module/client_part3/', trust_remote_code=True)
-    configC.pre_seq_len = modelA_args.pre_seq_len # 参数必须存在且与modelA一致，否则无法生成prefix_encoder_mask并冻结模型参数
+    configC = AutoConfig.from_pretrained('./client_part3/', trust_remote_code=True)
+    configC.pre_seq_len = modelA_args.pre_seq_len 
     configC.prefix_projection = False
     modelC = ChatGLMForConditionalGenerationClientSideC(config=configC).cuda()
-    state_dictC = torch.load('fed-glm-module/client_part3/client_model_partC_param.bin')
+    state_dictC = torch.load('./client_part3/client_model_partC_param.bin')
     modelC.load_state_dict(state_dictC)
-    # 模型量化以及微调
+    
+    # Quantization
     if modelA_args.quantization_bit is not None:
         print(f"Quantized to {modelA_args.quantization_bit} bit")
         modelA = modelA.quantize(modelA_args.quantization_bit)
@@ -754,21 +588,11 @@ def main() -> None:
 
 
     models = [modelA, modelC]
-
-    # tokenizer初始化
     tokenizer = AutoTokenizer.from_pretrained('chatglm-6b', trust_remote_code=True)
-    # optimizer初始化
     optimA = AdamW(modelA.parameters(), lr=modelA_args.lr, betas=modelA_args.betas,eps=modelA_args.eps, weight_decay=modelA_args.weight_decay)
     optimC = AdamW(modelC.parameters(), lr=modelA_args.lr, betas=modelA_args.betas,eps=modelA_args.eps, weight_decay=modelA_args.weight_decay)
-    # schedule 初始化
     scheduleA = LinearLR(optimA, start_factor=1.0, end_factor=0.0, total_iters=modelA_args.max_step)
     scheduleC = LinearLR(optimC, start_factor=1.0, end_factor=0.0, total_iters=modelA_args.max_step)
-
-    # get datalist
-    #datalist = get_data_list(modelA_args, tokenizer)
-
-    # get optimizers
-    #optimizer = [optimA, optimC]
     schedule = [scheduleA,scheduleC]
 
     # get datalist
