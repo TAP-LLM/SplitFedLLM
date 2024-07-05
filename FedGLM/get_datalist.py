@@ -5,9 +5,9 @@ import torch.nn as nn
 from transformers.optimization import AdamW
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/chatglm-6b')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client_part3')
+sys.path.append('chatglm-6b file path')
+sys.path.append('./client')
+sys.path.append('./client_part3')
 
 from client_part3.client_model_partC import ChatGLMForConditionalGenerationClientSideC
 from client.client_model_partA import ChatGLMForConditionalGenerationClientSide
@@ -139,7 +139,6 @@ def FLparser(): # use glm arguments with argument.py
 # get datalist
 
 def get_data_list(modelA_args, tokenizer):
-    # 以下部分需要改进为数据处理函数以及dataloader
     # Load dataset
     data_dir = modelA_args.data_fold
     data_files = {}
@@ -191,55 +190,6 @@ def get_data_list(modelA_args, tokenizer):
             if examples[passage_column][i] : # :and examples[answer_column][i]
                 query = examples[passage_column][i]  # origin cnn xsum
                 answer = examples[answer_column][i]
-                # boolq
-                # query = examples[passage_column][i] + '. Question: {}? Answer:'.format(examples[question_column][i])
-                # wic
-                # query = '\"{}\" / \"{}\" Similar sense of {}? '.format(examples[passage_column][i], 
-                #                                                        examples[passage_column2][i],
-                #                                                        examples[question_column][i])
-                # answer = 'Yes' if examples[answer_column][i] else 'No'
-
-                # copa
-                # query = 'Choice A: \"{}\" or Choice B: \"{}\" Premise: {} The {} is '.format(examples[passage_column][i],
-                #                                          examples[passage_column2][i],
-                #                                          examples[premise_column][i],
-                #                                          examples[question_column][i])
-                # answer = 'A' if examples[answer_column][i] else 'B'
-
-                # wsc only true
-                # query = '[{}]The pronoun \'*{}*\' refers to'.format(examples[passage_column][i], 
-                #                                                   examples[question_column][i]['span2_text'])
-                # answer = examples[question_column][i]['span1_text']
-
-                # full wsc
-                # query = '[{}] Is the pronoun \'{}\' refers to \'{}\' ?'.format(examples[passage_column][i], 
-                #                                                   examples[question_column][i]['span2_text'],
-                #                                                   examples[question_column][i]['span1_text'])
-                                                                                                            
-                # answer = 'Yes' if examples[answer_column][i] else 'No'
-
-                # rte
-                # query = "\"{}\"? | [MASK], \"{}\"".format(examples[passage_column][i],examples[premise_column][i])
-                # answer = 'Yes' if examples[answer_column][i]=='entailment' else 'No'
-
-                # cb
-                # query = "\"{}\"? | [MASK], \"{}\"".format(examples[question_column][i],examples[premise_column][i])
-                # answer = ''
-                # if examples[answer_column][i]=='entailment':
-                #     answer = 'Yes'
-                # elif examples[answer_column][i]=='contradiction':
-                #     answer = 'No'
-                # elif examples[answer_column][i]== 'neutral':
-                #     answer = 'Maybe'
-                
-                # record
-                # query = '[{}][{}]'.format(examples[passage_column][i]['text'], examples[question_column][i][0]['query'])
-                # query = query.replace('@placeholder', '[MASK]')
-                # # print(query)
-                # answer = ''
-                # for j in range(len(examples[question_column][i][0]['answers'])):
-                # # answer = '[{}]'.format(examples[question_column][i][0]['answers'][0]['text'])
-                #     answer += ' [{}]'.format(examples[question_column][i][0]['answers'][j]['text'])
 
                 if history_column is None or len(examples[history_column][i]) == 0:
                     prompt = query
@@ -250,44 +200,13 @@ def get_data_list(modelA_args, tokenizer):
                         prompt += "[Round {}]\n问：{}\n答：{}\n".format(turn_idx, old_query, response)
                     prompt += "[Round {}]\n问：{}\n答：".format(len(history), query)
 
-
-                # record
-                # a_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
-                # # print(len(a_ids))
-                # if len(a_ids) > 1024:
-                #     continue
-
                 inputs.append(prompt)
                 # targets.append(examples[answer_column][i])
                 targets.append(answer)
                 # targets.append('Yes' if examples[answer_column][i] else 'No')
 
-                # full multirc
-                # passage_i = '\"{}\"'.format(examples[passage_column][i]['text'])
-                # for j in range(len(examples[passage_column][i]['questions'])):
-                #     for k in range(len(examples[passage_column][i]['questions'][j]['answers'])):
-                #         query  = passage_i + " Question:{} Is it answer \"{}\"".format(
-                #                          examples[passage_column][i]['questions'][j]['question'],
-                #                          examples[passage_column][i]['questions'][j]['answers'][k]['text']) 
-                #         answer = examples['passage'][i]['questions'][j]['answers'][k]['label']
-                        
-                #         if history_column is None or len(examples[history_column][i]) == 0:
-                #             prompt = query
-                #         else:
-                #             prompt = ""
-                #             history = examples[history_column][i]
-                #             for turn_idx, (old_query, response) in enumerate(history):
-                #                 prompt += "[Round {}]\n问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                #             prompt += "[Round {}]\n问：{}\n答：".format(len(history), query)
-
-                #         inputs.append(prompt)
-                #         targets.append('Yes' if answer else 'No')
-  
-                # record 
-                # cloze_question = examples[passage_column][i] + examples[question_column][i]
 
         model_inputs = tokenizer(inputs, max_length=modelA_args.max_source_length, truncation=True, padding=True)
-        #print("model_inputs['input_ids'][0:5]:",model_inputs['input_ids'][0:5])
         labels = tokenizer(text_target=targets, max_length=max_target_length, truncation=True)
 
         if modelA_args.ignore_pad_token_for_loss:
@@ -308,102 +227,6 @@ def get_data_list(modelA_args, tokenizer):
         for i in range(len(examples[passage_column])):
             if examples[passage_column][i] : # : and examples[answer_column][i]# in soperglue some samples' label is bool 
                 query, answer = examples[passage_column][i], examples[answer_column][i]
-               
-                # origin
-                # query, answer = examples[passage_column][i], examples[answer_column][i]
-                # boolq
-                # query = examples[passage_column][i] + '. Question: {}? Answer:'.format(examples[question_column][i])
-
-                # wic
-                # query = '\"{}\" / \"{}\" Similar sense of {}? '.format(examples[passage_column][i], 
-                #                                                        examples[passage_column2][i],
-                #                                                        examples[question_column][i])
-
-                # answer = 'Yes' if examples[answer_column][i] else 'No'
-
-                # copa trainbatchsize1
-                # query = 'Choice A: \"{}\" or Choice B: \"{}\" Premise: {} The {} is '.format(examples[passage_column][i],
-                #                                          examples[passage_column2][i],
-                #                                          examples[premise_column][i],
-                #                                          examples[question_column][i])
-                # answer = 'A' if examples[answer_column][i] else 'B'
-
-                # wsc only true
-                # query = '[{}]The pronoun \'*{}*\' refers to'.format(examples[passage_column][i], 
-                #                                                   examples[question_column][i]['span2_text'])
-                # answer = examples[question_column][i]['span1_text']
-
-                # full wsc
-                # query = '[{}] The pronoun \'*{}*\' refers to {} ?'.format(examples[passage_column][i], 
-                #                                                   examples[question_column][i]['span2_text'],
-                #                                                   examples[question_column][i]['span1_text'])
-                                                                                                            
-                # answer = 'Yes' if examples[answer_column][i] else 'No'
-
-                # # rte
-                # query = "\"{}\"? | [MASK], \"{}\"".format(examples[passage_column][i],examples[premise_column][i])
-                # answer = 'Yes' if examples[answer_column][i]=='entailment' else 'No'
-
-                # # cb
-                # query = "\"{}\"? | [MASK], \"{}\"".format(examples[question_column][i],examples[premise_column][i])
-                # answer = ''
-                # if examples[answer_column][i]=='entailment':
-                #     answer = 'Yes'
-                # elif examples[answer_column][i]=='contradiction':
-                #     answer = 'No'
-                # elif examples[answer_column][i]== 'neutral':
-                #     answer = 'Maybe'
-
-                # record
-                # query = '[{}][{}]'.format(examples[passage_column][i]['text'], examples[question_column][i][0]['query'])
-                # query = query.replace('@placeholder', '[MASK]')
-                # multi-query/multi-answer
-
-                # answer = '[{}]'.format(examples[question_column][i][0]['answers'][0]['text'])
-
-                # full multirc
-                # passage_i = '\"{}\"'.format(examples[passage_column][i]['text'])
-                # for j in range(len(examples[passage_column][i]['questions'])):
-                #     for k in range(len(examples[passage_column][i]['questions'][j]['answers'])):
-                #         query  = passage_i + " Question:{} Is it answer \"{}\" ?".format(
-                #                          examples[passage_column][i]['questions'][j]['question'],
-                #                          examples[passage_column][i]['questions'][j]['answers'][k]['text']) 
-                #         label_k = examples['passage'][i]['questions'][j]['answers'][k]['label'] 
-                #         answer = 'Yes' if label_k else 'No'
-
-                #         if history_column is None:
-                #             prompt = query
-                #         else:
-                #             prompt = ""
-                #             history = examples[history_column][i]
-                #             for turn_idx, (old_query, response) in enumerate(history):
-                #                 prompt += "[Round {}]\n问：{}\n答：{}\n".format(turn_idx, old_query, response)
-                #                 prompt += "[Round {}]\n问：{}\n答：".format(len(history), query)
-
-                #         prompt = prefix + prompt
-                #         a_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
-                #         b_ids = tokenizer.encode(text=answer, add_special_tokens=False)
-
-                #         if len(a_ids) > modelA_args.max_source_length - 1:
-                #             a_ids = a_ids[: modelA_args.max_source_length - 1]
-
-                #         if len(b_ids) > modelA_args.max_target_length - 2:
-                #             b_ids = b_ids[: modelA_args.max_target_length - 2]
-
-                #         input_ids = tokenizer.build_inputs_with_special_tokens(a_ids, b_ids)
-
-                #         context_length = input_ids.index(tokenizer.bos_token_id)
-                #         mask_position = context_length - 1
-                #         labels = [-100] * context_length + input_ids[mask_position+1:]
-                
-                #         pad_len = max_seq_length - len(input_ids)
-                #         input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
-                #         labels = labels + [tokenizer.pad_token_id] * pad_len
-                #         if modelA_args.ignore_pad_token_for_loss:
-                #             labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
-
-                #         model_inputs["input_ids"].append(input_ids)
-                #         model_inputs["labels"].append(labels)
 
                 if history_column is None:
                     prompt = query
@@ -416,7 +239,7 @@ def get_data_list(modelA_args, tokenizer):
 
                 prompt = prefix + prompt
                 a_ids = tokenizer.encode(text=prompt, add_special_tokens=False)
-                # print(len(a_ids))
+
                 if len(a_ids) > 1024:
                     continue
                 b_ids = tokenizer.encode(text=answer, add_special_tokens=False)
@@ -435,8 +258,7 @@ def get_data_list(modelA_args, tokenizer):
                 
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
-                # #6/29新增
-                # print("input_ids['input_ids'][0:5]:",input_ids['input_ids'][0:5])
+
                 labels = labels + [tokenizer.pad_token_id] * pad_len
                 if modelA_args.ignore_pad_token_for_loss:
                     labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
@@ -466,10 +288,6 @@ def get_data_list(modelA_args, tokenizer):
                 # desc="Running tokenizer on train dataset",
             )
         dataset = train_dataset
-        #print(len(dataset['input_ids'][0])) :640
-
-        #train_dataset:(3000,2)
-        #['input_ids'，'labels']
 
     if modelA_args.do_eval:
         max_target_length = modelA_args.val_max_target_length
@@ -480,9 +298,6 @@ def get_data_list(modelA_args, tokenizer):
         if modelA_args.max_eval_samples is not None:
             max_eval_samples = min(len(eval_dataset), modelA_args.max_eval_samples)
             eval_dataset = eval_dataset.select(range(max_eval_samples))
-        # eval_dataset = eval_dataset.select(range(1000))
-        # print(len(eval_dataset))
-        # with training_args.main_process_first(desc="validation dataset map pre-processing"):
         eval_dataset = eval_dataset.map(
                 preprocess_function_eval,
                 batched=True,
@@ -492,7 +307,7 @@ def get_data_list(modelA_args, tokenizer):
                 # desc="Running tokenizer on validation dataset",
             )
         dataset = eval_dataset
-        # print_dataset_example(eval_dataset[0])
+
         print('length of eval dataset',len(eval_dataset))
 
     if modelA_args.do_predict:
@@ -500,16 +315,11 @@ def get_data_list(modelA_args, tokenizer):
         if "test" not in raw_datasets:
             raise ValueError("--do_predict requires a test dataset")
         predict_dataset = raw_datasets["test"]
-        # 6/27新增
-        # predict_dataset({features: ['answer', 'question'],num_rows: 300})
 
         if modelA_args.max_predict_samples is not None:
             max_predict_samples = min(len(predict_dataset), modelA_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
-        #predict_dataset = predict_dataset.select(range(1000))
-        # 6/26新增
-        # predict_dataset = predict_dataset.select(max_predict_samples)
-        # with training_args.main_process_first(desc="prediction dataset map pre-processing"):
+            
         predict_dataset = predict_dataset.map(
                 preprocess_function_eval,
                 batched=True,
@@ -519,9 +329,7 @@ def get_data_list(modelA_args, tokenizer):
                 # desc="Running tokenizer on prediction dataset",
             )
         dataset = predict_dataset
-        #print(len(dataset['input_ids'][0])):128
-        # predict_dataset:  (300, 4)
-        # ['input_ids'，'attention_mask','position_ids'，'labels']
+
         print('length of predicted dataset',len(predict_dataset))
     
     print('length of dataset',len(dataset))
@@ -539,17 +347,7 @@ def get_data_list(modelA_args, tokenizer):
     generator = torch.Generator()
     generator.manual_seed(modelA_args.seed)
     sampler = RandomSampler(dataset, generator=generator)
-    # dataloader = DataLoader(
-    #         train_dataset,
-    #         batch_size=modelA_args.batch_size,
-    #         sampler=sampler,
-    #         collate_fn=data_collator,
-    #         drop_last=modelA_args.dataloader_drop_last,
-    #         num_workers=modelA_args.dataloader_num_workers,
-    #         pin_memory=modelA_args.dataloader_pin_memory,
-    #         worker_init_fn=seed_worker,
-    #     )
-    # 6/26新增以下
+
     if modelA_args.do_train:
         dataloader = DataLoader(
                 train_dataset,
@@ -596,8 +394,7 @@ def get_data_list(modelA_args, tokenizer):
     else:
         for batch in dataloader:
             data_list.append(batch)
-        #6/16新增
-        # data_list[0].keys为 dict_keys(['input_ids', 'attention_mask', 'position_ids', 'labels'])
+
     return data_list
 
 def seed_worker(_):
@@ -623,7 +420,7 @@ def main():
     print(len(datalist))
     print(len(datalist[0]))
     print(datalist[0][0])
-    print(datalist[1][0]) # 需要双重索引
+    print(datalist[1][0]) 
     print(datalist[9][0]) # dict:{'input_ids':[int], 'labels':[int]}
 
 if __name__ == "__main__":
