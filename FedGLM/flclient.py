@@ -8,9 +8,9 @@ from transformers.optimization import AdamW
 from torch.optim.lr_scheduler import LinearLR
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/chatglm-6b')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client_part3')
+sys.path.append('chatglm-6b path')
+sys.path.append('./client')
+sys.path.append('./client_part3')
 
 from client_part3.client_model_partC import ChatGLMForConditionalGenerationClientSideC
 from client.client_model_partA import ChatGLMForConditionalGenerationClientSide
