@@ -1,13 +1,8 @@
-# SplitFedLLM
+# FedGLM-LLaMA
 ![transformers](https://img.shields.io/badge/transformers->=4.38.0-greene)
 ![License](https://img.shields.io/badge/license-MIT-yellow)  
 ![Python](https://img.shields.io/badge/Python->=3.10.4-blue)  
  Read this in [English](README_en.md)
-
-## 项目介绍
-本开源项目基于开源的LLAMA和GLM模型，实现了单机/多机部署的分布式联邦学习框架对模型进行微调以及推理,  
-在保证客户端数据隐私安全的同时，实现模型参数的聚合，从而实现模型参数的共享。使得用户可以在自身算力  
-有限的情况下利用项目部署平台的资源端进行模型微调，从而实现模型的垂直领域定制化。
 
 ## 支持的模型
 | Model            | Type | Download                                                                                                                                |
@@ -20,7 +15,7 @@
 ### 安装依赖项
 ```bash
 git clone https://github.com/TAP-LLM/SplitFedLLM.git
-cd SplitFedLLM
+cd SplitFedLLM/FedGLM-LLaMA
 pip install -r requirements.txt
 ```
 ### 数据准备
@@ -73,8 +68,8 @@ pip install -r requirements.txt
 
 
 ##### 推理：
-客户端：`./eval/client.py`  
-服务器：`./eval/service.py`  
+客户端：`./eval/test-client/client.py`  
+服务器：`./eval/test-service/service.py`  
 将服务器端和客户端的模型参数路径改写好：  
 ```python
 finetune_model_path = "your_finetune_model_path"  # lora参数
@@ -90,6 +85,11 @@ python client.py
 #### 结束服务
 结束后，手动关闭终端。
 
+##### 模型分割与保存
+客户端模型：`./eval/test-client/prepare_client_model.py`  
+服务器模型：`./eval/test-service/prepare_service_model.py`   
+
+将微调阶段得到的客户端和服务器端的finetune模型分别导入，base模型保持不变，自动分割进行保存。采用了transformers库的方式，保存好后的模型可以直接作为base模型，而无需额外添加之前的finetune模型。
 ## TODO
 加入断点续训，目前暂不支持
 

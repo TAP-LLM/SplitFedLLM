@@ -1,7 +1,3 @@
-## Project Introduction
-This open source project is based on the open source LLAMA and GLM models, and has implemented a distributed federated learning framework for model fine-tuning and inference on a single/multiple machine deployment.
-While ensuring client data privacy and security, it aggregates model parameters to achieve model parameter sharing. This allows users with limited computing power to use the resources of the project deployment platform for model fine-tuning, thereby achieving vertical domain customization of the model.
-
 ## Supported Models
 | Model            | Type | Download                                                                                                                                |
 |------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------|                                                                                                                                                                                         
@@ -13,7 +9,7 @@ While ensuring client data privacy and security, it aggregates model parameters 
 ### Install Dependencies
 ```bash
 git clone https://github.com/TAP-LLM/SplitFedLLM.git
-cd SplitFedLLM
+cd SplitFedLLM/FedGLM-LLaMA
 pip install -r requirements.txt
 ```
 ### Data Preparation
@@ -63,8 +59,8 @@ ATTENTION:
 
 
 ##### Inference:
-Client: `./eval/client.py`
-Server: `./eval/service.py` 
+Client: `./eval/test-client/client.py`
+Server: `./eval/test-service/service.py` 
 Rewrite the model parameter path for the server and client:  
 ```python
 finetune_model_path = "your_finetune_model_path"  # lora parameters
@@ -79,6 +75,11 @@ ATTENTION:
 1. Before starting the service, please change all the fields of 'your_ip' to the IP addresses of your server and receiver.
 2. Please start the server first, and it is best to wait for the server to respond with "waiting for reception" before starting the client.
 
+##### Model Splitting and Saving
+Client Model: `./eval/test-client/prepare_client_model.py`  
+Server Model: `./eval/test-service/prepare_service_model.py`  
+
+Import the client and server finetuned models obtained from the finetuning phase separately, while keeping the base model unchanged. The models are automatically split and saved. Using the transformers library, the saved models can directly serve as base models without the need to additionally include the previous finetuned models.
 ## TODO
 Join breakpoint continuation, currently not supported
 
