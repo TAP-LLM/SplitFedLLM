@@ -26,10 +26,10 @@ import collections
 import flwr as fl
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/chatglm-6b')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client_part3')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/server')
+sys.path.append('chatglm-6b path')
+sys.path.append('./client')
+sys.path.append('./client_part3')
+sys.path.append('./server')
 
 import concurrent.futures
 import timeit
