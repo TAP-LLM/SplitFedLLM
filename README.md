@@ -1,4 +1,5 @@
 # FedGLM: Safely Learning with Private Data
+https://github.com/TAP-LLM/SplitFedLLM/assets/131137567/c647c889-4c9c-43e7-b82b-6d3fbb0638b1
 ## Project Introduction
 This open source project is based on the open source LLAMA and GLM models, and has implemented a distributed federated learning framework for model fine-tuning and inference on a single/multiple machine deployment.
 While ensuring client data privacy and security, it aggregates model parameters to achieve model parameter sharing. This allows users with limited computing power to use the resources of the project deployment platform for model fine-tuning, thereby achieving vertical domain customization of the model.
@@ -28,3 +29,7 @@ If you find this repository useful or our work is related to your research, plea
       url={https://arxiv.org/abs/2406.14898}, 
 }
 ```
+
+
+
+
