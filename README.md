@@ -8,7 +8,7 @@ While ensuring client data privacy and security, it aggregates model parameters 
 | Model            | Type | Download                                                                                                                                |
 |------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | ChatGLM-6B | Chat |https://github.com/THUDM/ChatGLM-6B|
-| Llama-2-7b-hf    | Chat | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-hf)  |
+| Llama-2-7b-hf    | Base | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-hf)  |
 | Llama-2-7b-chat-hf | Chat | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) |
 
 
