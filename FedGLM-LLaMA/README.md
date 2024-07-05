@@ -7,7 +7,7 @@
 ## 支持的模型
 | Model            | Type | Download                                                                                                                                |
 |------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------|                                                                                                                                                                                         
-| Llama-2-7b-hf    | Chat | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-hf)  |
+| Llama-2-7b-hf    | Base | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-hf)  |
 | Llama-2-7b-chat-hf | Chat | [🤗 Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)                                                                                                                                                                                          |
 
 ## 快速开始
