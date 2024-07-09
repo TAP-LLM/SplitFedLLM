@@ -4,6 +4,8 @@ https://github.com/TAP-LLM/SplitFedLLM/assets/131137567/c647c889-4c9c-43e7-b82b-
 This open source project is based on the open source LLAMA and GLM models, and has implemented a distributed federated learning framework for model fine-tuning and inference on a single/multiple machine deployment.
 While ensuring client data privacy and security, it aggregates model parameters to achieve model parameter sharing. This allows users with limited computing power to use the resources of the project deployment platform for model fine-tuning, thereby achieving vertical domain customization of the model.
 
+2024/7/9: Due to project funding, the ChatGLM federated learning code is currently undergoing open-source approval. We will continue to provide updates.
+
 ## Supported Models
 | Model            | Type | Download                                                                                                                                |
 |------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------|
