@@ -5,9 +5,9 @@ import torch.nn as nn
 from transformers.optimization import AdamW
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/chatglm-6b')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client')
-sys.path.append('/home/zhengjiaying/project/TFed-GLM/fed-glm-module/client_part3')
+sys.path.append('./chatglm-6b')
+sys.path.append('./client')
+sys.path.append('./client_part3')
 
 from client_part3.client_model_partC import ChatGLMForConditionalGenerationClientSideC
 from client.client_model_partA import ChatGLMForConditionalGenerationClientSide
@@ -96,7 +96,7 @@ def FLparser(): # use glm arguments with argument.py
     parser.add_argument("--betas", type=tuple, help='(adamhf)optimizer betas', default=(0.9,0.999))
     parser.add_argument("--eps", type=float, help='(adamhf)optimizer eps', default=1e-8)
     parser.add_argument("--weight_decay", type=float, help='(adamhf)optimizer weight decay', default=0.0)
-    parser.add_argument("--output_dir", type=str, help = 'output folder path', default='/home/zhengjiaying/project/TFedGLM/checkpoint/default')
+    parser.add_argument("--output_dir", type=str, help = 'output folder path', default='./checkpoint/default')
     parser.add_argument("--save_step", type=int, help = 'step to save the prefix encoder', default=1)
     parser.add_argument("--max_step", type=int, help='number of max training steps, should be same with serve side!', default=10)
     parser.add_argument("--do_train", type=bool, help='Whether to run training.', default=False)
@@ -611,7 +611,7 @@ def seed_worker(_):
 def main():
     modelA_args = FLparser()
     modelA_args.do_train = True
-    modelA_args.data_fold = './data/QA/huatuo'
+    modelA_args.data_fold = './huatuo'
     modelA_args.max_step = 30000
     modelA_args.premise_column = 'premise'
     modelA_args.question_column = 'question'
