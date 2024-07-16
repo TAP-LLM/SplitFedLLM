@@ -6,6 +6,8 @@ While ensuring client data privacy and security, it aggregates model parameters 
 
 2024/7/9: Due to project funding, the ChatGLM federated learning code is currently undergoing open-source approval. We will continue to provide updates.
 
+2024/7/16: FedGLM released！
+
 ## Supported Models
 | Model            | Type | Download                                                                                                                                |
 |------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------|
