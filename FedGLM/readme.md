@@ -13,6 +13,7 @@ pip install -r requirements.txt
 ### split the model  by using 'split_model.py'
 ```python
 python ./FedGLM/split_model.py --glm_path='***' --save_path='***'
+# After split the model parameters, use the "modify_state_dict.py" to avoid errors when loading model parameters.
 ```
 move 'client_model_partA_param.bin' to the fold 'client'
 
