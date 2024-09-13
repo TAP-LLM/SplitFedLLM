@@ -1,3 +1,9 @@
+'''
+This is a sample program to modify the model parameter state dictionary of client. 
+After splitting a model parameter using 'split_model.py', 
+the key of the parameter state dictionary will change and this script needs to be executed to avoid errors when loading model parameters.
+For the other two part models, you can modify the state dictionary by modifying the loaded model and the corresponding parameter paths.
+'''
 import argparse
 import sys 
 import os
@@ -17,17 +23,17 @@ from transformers import (
 )
 
 
-config = AutoConfig.from_pretrained('./fed-glm-module/client/', trust_remote_code=True)
+config = AutoConfig.from_pretrained('./FedGLM/client/', trust_remote_code=True)
 config.pre_seq_len = None
 config.prefix_projection = False
 
-# model = AutoModel.from_pretrained('./fed-glm-module/client/', config=config,  trust_remote_code=True)
+# model = AutoModel.from_pretrained('./FedGLM/client/', config=config,  trust_remote_code=True)
 model = ChatGLMForConditionalGenerationClientSide(config=config)
 ss = model.state_dict()
 print(model.state_dict())
 # print(model) 通过
 # 载入模型参数
-state_dict1=torch.load('./save_model/clientsideglm.bin')
+state_dict1=torch.load('./client_model_partA_param.bin') # Parameters splited by using slpit_model.py
 # print(state_dict) 参数名不同
 
 
