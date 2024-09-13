@@ -126,9 +126,10 @@ def FLparser(): # use glm arguments with argument.py
     parser.add_argument("--max_train_samples", type=Optional[int], default=None)
     parser.add_argument("--max_eval_samples", type=Optional[int], default=None)  
     
-    parser.add_argument("--train_file", type=str,  default='train.jsonl')
-    parser.add_argument("--validation_file", type=str,  default='val.jsonl') 
-    parser.add_argument("--test_file", type=str,  default='val.jsonl')
+    # This script can handle data in a variety of formats, so please remember to change the name of the data file here！
+    parser.add_argument("--train_file", type=str,  default='train.json')  
+    parser.add_argument("--validation_file", type=str,  default='val.json') 
+    parser.add_argument("--test_file", type=str,  default='val.json')
     
     
         
@@ -139,7 +140,6 @@ def FLparser(): # use glm arguments with argument.py
 # get datalist
 
 def get_data_list(modelA_args, tokenizer):
-    # 以下部分需要改进为数据处理函数以及dataloader
     # Load dataset
     data_dir = modelA_args.data_fold
     data_files = {}
@@ -148,8 +148,7 @@ def get_data_list(modelA_args, tokenizer):
         data_files["train"] = modelA_args.train_file
         extension = modelA_args.train_file.split(".")[-1]
     if modelA_args.validation_file is not None:
-        # data_files["validation"] = modelA_args.validation_file
-        data_files["validation"] = modelA_args.train_file
+        data_files["validation"] = modelA_args.validation_file
         extension = modelA_args.validation_file.split(".")[-1]
     if modelA_args.test_file is not None:
         data_files["test"] = modelA_args.test_file
@@ -166,8 +165,7 @@ def get_data_list(modelA_args, tokenizer):
     if modelA_args.do_train:
         column_names = raw_datasets["train"].column_names # boolq question passage label idx
     elif modelA_args.do_eval:
-        # column_names = raw_datasets["validation"].column_names
-        column_names = raw_datasets["train"].column_names
+        column_names = raw_datasets["validation"].column_names
     elif modelA_args.do_predict:
         column_names = raw_datasets["test"].column_names
     else:
@@ -189,7 +187,7 @@ def get_data_list(modelA_args, tokenizer):
         for i in range(len(examples[passage_column])):
             print(i)
             if examples[passage_column][i] : # :and examples[answer_column][i]
-                query = examples[passage_column][i]  # origin cnn xsum
+                query = examples[passage_column][i]  # origin cnn xsum huatuo
                 answer = examples[answer_column][i]
                 # boolq
                 # query = examples[passage_column][i] + '. Question: {}? Answer:'.format(examples[question_column][i])
@@ -620,11 +618,11 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained('chatglm-6b', trust_remote_code=True)
     datalist = get_data_list( modelA_args, tokenizer)
-    print(len(datalist))
-    print(len(datalist[0]))
-    print(datalist[0][0])
-    print(datalist[1][0]) # 需要双重索引
-    print(datalist[9][0]) # dict:{'input_ids':[int], 'labels':[int]}
+    # print(len(datalist))
+    # print(len(datalist[0]))
+    # print(datalist[0][0])
+    # print(datalist[1][0]) 
+    # print(datalist[9][0]) # [epoch_id][batch_id] dict:{'input_ids':[int], 'labels':[int]}
 
 if __name__ == "__main__":
     main()
