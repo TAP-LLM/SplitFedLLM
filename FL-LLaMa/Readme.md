@@ -1,4 +1,4 @@
-# FL-LLaMA
+# FL-LLaMa
 ![transformers](https://img.shields.io/badge/transformers->=4.38.0-greene)
 ![License](https://img.shields.io/badge/license-MIT-yellow)  
 ![Python](https://img.shields.io/badge/Python->=3.10.4-blue)  
@@ -32,25 +32,30 @@ CB：处理复杂句子中的蕴含关系。
 MultiRC：基于多句子上下文回答多答案问题。
 官方链接：https://super.gluebenchmark.com/tasks
 下载方式
+```bash
 wget https://dl.fbaipublicfiles.com/glue/superglue/data/v2/combined.zip
-
-2. CoQA 数据集
+```
+3. CoQA 数据集
 任务类型：对话式问答（QA），聚焦多轮对话中的上下文连贯性评估。
 数据集详情：
 包含 8,000 多个对话和 127,000 多个问题，覆盖 7 个领域。
 近半数问题需要指代消解和语用推理。
 官方链接：https://stanfordnlp.github.io/coqa/
 下载方式：
+```bash
 wget https://nlp.stanford.edu/data/coqa/coqa-train-v1.0.json
+```
 
-3. XSum 数据集
+5. XSum 数据集
 任务类型：摘要生成，评估模型对新闻文章的极端压缩能力。
 数据集详情：
 包含 BBC 新闻文章和人工撰写的单句摘要,要求模型生成高度简洁的单句摘要。
 官方链接：https://github.com/EdinburghNLP/XSum/tree/master
 下载方式：
 #### 通过 Hugging Face 下载
+```bash
 wget https://huggingface.co/datasets/EdinburghNLP/xsum/resolve/main/data/XSUM-EMNLP18-Summary-Data-Original.tar.gz?download=true
+```
 #### Xsum数据拆分
 详见 FedGLM-LLaMA/data/Xsum
 
