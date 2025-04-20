@@ -1,0 +1,6 @@
+2025-02-23 15:07:05,003 - __main__ - INFO - Per question measures (i.e. precision-recall per question, then average) -official_eval
+2025-02-23 15:07:05,004 - __main__ - INFO - 	P: 0.8520261829810615 - R: 0.840298805776245 - F1m: 0.8461218605237443-official_eval
+2025-02-23 15:07:05,017 - __main__ - INFO - 	EM0: 0.49527806925498424-official_eval
+2025-02-23 15:07:05,017 - __main__ - INFO - 	EM1: 0.8153200419727177-official_eval
+2025-02-23 15:07:05,023 - __main__ - INFO - Dataset-wide measures (i.e. precision-recall across all the candidate-answers in the dataset) -official_eval
+2025-02-23 15:07:05,023 - __main__ - INFO - 	P: 0.8112676056338028 - R: 0.8327710843373494 - F1a: 0.8218787158145066-official_eval
