@@ -1,2 +1,0 @@
-# 格式说明： Version路径
-/home/zhangzishuai/SplitFederated-LLaMA/Fed-Llama-module/output/Record/version_8_r32_al32_Lr0.00002
