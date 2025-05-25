@@ -1,8 +1,8 @@
 # FedGLM: Safely Learning with Private Data
 https://github.com/TAP-LLM/SplitFedLLM/assets/131137567/c647c889-4c9c-43e7-b82b-6d3fbb0638b1
-## Reviewer TIPS
-This is a project containing FL-GLM and FL-LLaMA. If you are a reviewer for <A Federated Splitting Framework for LLMs: Security, Efficiency, and Adaptability> . Please click the FL-LLaMA directory. Thank you for your support! 
 
+<span style="color:red;">## Reviewer TIPS</span>
+This is a project containing FL-GLM and FL-LLaMA. If you are a reviewer for <A Federated Splitting Framework for LLMs: Security, Efficiency, and Adaptability> . Please click the FL-LLaMA directory. Thank you for your support! 
 
 ## Project Introduction
 This open source project is based on the open source LLAMA and GLM models, and has implemented a distributed federated learning framework for model fine-tuning and inference on a single/multiple machine deployment.
