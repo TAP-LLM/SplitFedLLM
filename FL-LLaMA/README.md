@@ -15,7 +15,7 @@
 ### 安装依赖项
 ```bash
 git clone https://github.com/TAP-LLM/SplitFedLLM.git
-cd SplitFedLLM/FL-LLaMa
+cd SplitFedLLM/FL-LLaMA
 pip install -r requirements.txt
 ```
 ### 数据准备
