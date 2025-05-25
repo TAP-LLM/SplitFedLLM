@@ -58,7 +58,9 @@ wget https://huggingface.co/datasets/EdinburghNLP/xsum/resolve/main/data/XSUM-EM
 注意：请cd到工作目录  cd /FL-LLaMA
 
 1.下载Llama 2模型，保存至 FL-LLaMa/Centralized_Models/model_path/
+
 2.分割模型 python src/SplitModel.py --SplitA --SplitB --SplitC
+
 3.分割Lora参数, python src/SplitModel.py --LoraA --LoraB --LoraC --lora_r 16 --lora_alpha 32 ,保证每一次从相同的lora权重训练（可选，用于调试）
 
 ### 启动服务
