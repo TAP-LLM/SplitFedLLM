@@ -15,7 +15,7 @@ Read this in [中文](README.md)
 ### Install Dependencies
 ```bash
 git clone https://github.com/TAP-LLM/SplitFedLLM.git
-cd SplitFedLLM/FL-LLaMa
+cd SplitFedLLM/FL-LLaMA
 pip install -r requirements.txt
 ```
 ### Data Preparation
