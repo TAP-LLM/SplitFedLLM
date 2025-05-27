@@ -231,7 +231,6 @@ def FLparser(): # use glm arguments with argument.py
     parser.add_argument("--Attack_train", help='Whether to attack to reconstruct dataset.', default=False)
     parser.add_argument("--Attack_random_initial", help='Whether to attack to reconstruct dataset.', default=False)
     parser.add_argument("--Attack_wandb", action="store_true", help='Whether to attack to reconstruct dataset.', default=False)
-    parser.add_argument("--Attack_predict_next", action="store_true", help='Whether to attack to reconstruct dataset.', default=True)
     parser.add_argument("--Attack_no_mask", action="store_true", help='Whether to attack to reconstruct dataset.', default=False)
     # truncation在训练攻击的时候为True ，测试的时候为False
     parser.add_argument("--Attack_truncation", action="store_true", help='Whether to attack to reconstruct dataset.', default=False)
@@ -686,22 +685,14 @@ class FL_Server(Server):
                         attack_logits = self.attack_decoder_model(input_ids=colluding_hidden)
                     else:
                         attack_logits = self.attack_decoder_model(input_ids=colluding_hidden, attention_mask = colluding_att_mask)
-                    # 预测下一个token
-                    if self.model_args.Attack_predict_next:
-                        shift_logits = attack_logits[..., :-1, :].contiguous()
-                        shift_labels = colluding_labels[..., 1:].contiguous()
-                        # Flatten the tokens
-                        shift_logits=shift_logits.view(-1, shift_logits.size(-1))
-                        shift_labels=shift_labels.view(-1)
-                        attack_loss = torch.nn.functional.cross_entropy(shift_logits, shift_labels, ignore_index=3)
-                    else:
-                        # 预测当前token
-                        # 计算交叉熵损失
-                        attack_loss = torch.nn.functional.cross_entropy(
-                            attack_logits.view(-1, self.attack_decoder_model.vocab_size), # torch.Size([2, 920, 32000])
-                            colluding_labels.view(-1), # torch.Size([2, 920])
-                            ignore_index=3
-                        )
+
+                    shift_logits = attack_logits[..., :-1, :].contiguous()
+                    shift_labels = colluding_labels[..., 1:].contiguous()
+                    # Flatten the tokens
+                    shift_logits=shift_logits.view(-1, shift_logits.size(-1))
+                    shift_labels=shift_labels.view(-1)
+                    attack_loss = torch.nn.functional.cross_entropy(shift_logits, shift_labels, ignore_index=3)
+
 
                     self.attack_optimizer.zero_grad()
                     attack_loss.backward()
