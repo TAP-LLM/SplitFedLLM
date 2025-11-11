@@ -1,0 +1,3 @@
+# Format Description: Learning Rate > LoRA Dimension > LoRA Scaling Coefficient > Version > ModelA Layers > ModelC Layers
+0.00003 16 32 0 2 3
+0.00002 16 32 1 3 4
