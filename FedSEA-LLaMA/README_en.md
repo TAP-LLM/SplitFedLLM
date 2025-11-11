@@ -135,3 +135,16 @@ After finishing, manually close the terminal.
 
 Feel free to explore more features.
 
+## Reference
+If you find this repository useful or our work is related to your research, please kindly cite it:
+```
+@misc{zhang2025fedseallamasecureefficientadaptive,
+      title={FedSEA-LLaMA: A Secure, Efficient and Adaptive Federated Splitting Framework for Large Language Models}, 
+      author={Zishuai Zhang and Hainan zhang and Weihua Li and Qinnan zhang and jin Dong and Yongxin Tong and Zhiming Zheng},
+      year={2025},
+      eprint={2505.15683},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2505.15683}, 
+}
+```
